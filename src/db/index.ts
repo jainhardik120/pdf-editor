@@ -1,0 +1,35 @@
+import { instrumentDrizzleClient } from '@kubiks/otel-drizzle';
+import { attachDatabasePool } from '@vercel/functions';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+
+import { env } from '@/lib/env';
+import logger from '@/lib/logger';
+
+const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+attachDatabasePool(pool);
+pool.on('error', (err) => {
+  logger.error('Unexpected error on idle client', { error: err.message, stack: err.stack });
+});
+
+export const db = drizzle({
+  client: pool,
+  logger: {
+    logQuery: (query, params) => {
+      logger.info('Query Executed', {
+        query: query,
+        params: params,
+      });
+    },
+  },
+});
+
+instrumentDrizzleClient(db, { dbSystem: 'postgresql' });
+
+export type Database = typeof db;
