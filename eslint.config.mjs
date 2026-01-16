@@ -282,7 +282,6 @@ const eslintConfig = defineConfig([
           maxEOF: 1,
         },
       ],
-      'no-negated-condition': 'warn',
       'no-nested-ternary': 'error',
       'no-param-reassign': 'error',
       'no-return-await': 'error',
