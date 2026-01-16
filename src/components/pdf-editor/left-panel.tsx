@@ -79,7 +79,7 @@ export const LeftPanel: React.FC = () => {
 
   return (
     <div className="bg-card border-border flex h-full w-56 flex-col border-r">
-      <div className="border-border border-b px-2 py-1.5">
+      <div className="border-border border-b px-2 py-1.5 h-12">
         <h2 className="text-foreground text-xs font-bold">COMPONENTS</h2>
         <p className="text-muted-foreground mt-0.5 text-xs">Drag or click</p>
       </div>

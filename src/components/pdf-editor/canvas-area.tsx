@@ -12,6 +12,7 @@ import {
   type BuilderElement,
 } from '@/contexts/builder-context';
 
+import { CanvasHeader } from './builder-header';
 import { CanvasElement } from './canvas-element';
 
 const dragClasses = ['ring-1', 'ring-accent/50'];
@@ -62,14 +63,11 @@ export const CanvasArea: React.FC = () => {
 
   return (
     <div className="bg-background flex flex-1 flex-col overflow-auto">
-      <div className="border-border bg-card border-b px-2 py-1.5">
-        <h2 className="text-foreground text-xs font-bold">CANVAS</h2>
-        <p className="text-muted-foreground mt-0.5 text-xs">Drop components here</p>
-      </div>
+      <CanvasHeader />
 
       <div
         ref={canvasRef}
-        className="bg-background m-0 flex-1 cursor-pointer overflow-auto rounded-none border-none p-2 transition-colors hover:border-none"
+        className="bg-background mx-10 flex-1 cursor-pointer overflow-auto rounded-none border-x p-2 transition-colors"
         onClick={() => {
           selectElement(null);
         }}

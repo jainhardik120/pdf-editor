@@ -28,7 +28,7 @@ export const RightPanel: React.FC = () => {
   if (element === null) {
     return (
       <div className="bg-card border-border flex h-full w-64 flex-col border-l">
-        <div className="border-border border-b px-2 py-1.5">
+        <div className="border-border h-12 border-b px-2 py-1.5">
           <h2 className="text-foreground text-xs font-bold">PROPERTIES</h2>
         </div>
         <div className="flex flex-1 items-center justify-center">
@@ -67,7 +67,7 @@ export const RightPanel: React.FC = () => {
 
   return (
     <div className="bg-card border-border flex h-full w-64 flex-col border-l">
-      <div className="border-border border-b px-2 py-1.5">
+      <div className="border-border h-12 border-b px-2 py-1.5">
         <h2 className="text-foreground text-xs font-bold">PROPERTIES</h2>
         <p className="text-muted-foreground mt-0.5 text-xs">{element.type.toUpperCase()}</p>
       </div>

@@ -273,7 +273,7 @@ export const CanvasElement: React.FC<CanvasElementProps> = ({
       case 'button':
         return (
           <button
-            className="rounded px-6 py-2 font-bold transition-all active:scale-95"
+            className="rounded px-6 py-2 font-bold"
             style={{
               backgroundColor: element.props.backgroundColor ?? '#7c3aed',
               color: element.props.color ?? '#ffffff',
