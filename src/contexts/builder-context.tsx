@@ -1,15 +1,115 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 import { z } from 'zod';
 
-const elementTypes = ['row', 'column', 'text', 'image', 'button', 'spacer'] as const;
+const elementTypes = [
+  'row',
+  'column',
+  'text',
+  'image',
+  'button',
+  'spacer',
+  'table',
+  'divider',
+  'list',
+] as const;
+const justifyContentValues = [
+  'flex-start',
+  'center',
+  'flex-end',
+  'space-between',
+  'space-around',
+] as const;
+const alignItemsValues = ['flex-start', 'center', 'flex-end', 'stretch'] as const;
+const listTypeValues = ['ordered', 'unordered'] as const;
+const dividerStyleValues = ['solid', 'dashed', 'dotted'] as const;
 
 export type ElementType = (typeof elementTypes)[number];
+export type JustifyContentValue = (typeof justifyContentValues)[number];
+export type AlignItemsValue = (typeof alignItemsValues)[number];
+export type ListTypeValue = (typeof listTypeValues)[number];
+export type DividerStyleValue = (typeof dividerStyleValues)[number];
+
+export const JUSTIFY_CONTENT_OPTIONS = justifyContentValues;
+export const ALIGN_ITEMS_OPTIONS = alignItemsValues;
+export const LIST_TYPE_OPTIONS = listTypeValues;
+export const DIVIDER_STYLE_OPTIONS = dividerStyleValues;
 
 export const isElementType = (value: string): value is ElementType =>
   elementTypes.includes(value as ElementType);
+
+const BasePropsSchema = z.object({
+  backgroundColor: z.string().optional(),
+  padding: z.string().optional(),
+  margin: z.string().optional(),
+});
+
+const ContainerPropsSchema = BasePropsSchema.extend({
+  gap: z.string().optional(),
+  justifyContent: z.enum(justifyContentValues).optional(),
+  alignItems: z.enum(alignItemsValues).optional(),
+});
+
+const TextPropsSchema = BasePropsSchema.extend({
+  text: z.string().optional(),
+  fontSize: z.string().optional(),
+  color: z.string().optional(),
+  fontWeight: z.string().optional(),
+  textAlign: z.string().optional(),
+});
+
+const ImagePropsSchema = BasePropsSchema.extend({
+  width: z.string().optional(),
+  height: z.string().optional(),
+  src: z.string().optional(),
+  alt: z.string().optional(),
+});
+
+const ButtonPropsSchema = BasePropsSchema.extend({
+  text: z.string().optional(),
+  color: z.string().optional(),
+});
+
+const SpacerPropsSchema = z.object({
+  height: z.string().optional(),
+});
+
+const TablePropsSchema = BasePropsSchema.extend({
+  rows: z.number().optional(),
+  columns: z.number().optional(),
+  borderColor: z.string().optional(),
+  cellPadding: z.string().optional(),
+  headerBackground: z.string().optional(),
+  data: z.array(z.array(z.string())).optional(),
+});
+
+const DividerPropsSchema = z.object({
+  height: z.string().optional(),
+  color: z.string().optional(),
+  style: z.enum(dividerStyleValues).optional(),
+});
+
+const ListPropsSchema = BasePropsSchema.extend({
+  items: z.array(z.string()).optional(),
+  listType: z.enum(listTypeValues).optional(),
+  fontSize: z.string().optional(),
+  color: z.string().optional(),
+});
+
+export const ElementPropsSchemas = {
+  row: ContainerPropsSchema,
+  column: ContainerPropsSchema,
+  text: TextPropsSchema,
+  image: ImagePropsSchema,
+  button: ButtonPropsSchema,
+  spacer: SpacerPropsSchema,
+  table: TablePropsSchema,
+  divider: DividerPropsSchema,
+  list: ListPropsSchema,
+} as const;
+
 export const PropsSchema = z
   .object({
     text: z.string().optional(),
@@ -19,15 +119,37 @@ export const PropsSchema = z
     padding: z.string().optional(),
     margin: z.string().optional(),
     gap: z.string().optional(),
-    justifyContent: z.string().optional(),
-    alignItems: z.string().optional(),
-    columns: z.number().optional(),
+    justifyContent: z.enum(justifyContentValues).optional(),
+    alignItems: z.enum(alignItemsValues).optional(),
     fontSize: z.string().optional(),
+    fontWeight: z.string().optional(),
+    textAlign: z.string().optional(),
     color: z.string().optional(),
+    src: z.string().optional(),
+    alt: z.string().optional(),
+    rows: z.number().optional(),
+    columns: z.number().optional(),
+    borderColor: z.string().optional(),
+    cellPadding: z.string().optional(),
+    headerBackground: z.string().optional(),
+    data: z.array(z.array(z.string())).optional(),
+    style: z.enum(dividerStyleValues).optional(),
+    items: z.array(z.string()).optional(),
+    listType: z.enum(listTypeValues).optional(),
   })
-  .catchall(z.union([z.string(), z.number()]).optional());
+  .catchall(
+    z.union([z.string(), z.number(), z.array(z.string()), z.array(z.array(z.string()))]).optional(),
+  );
 
 export type Props = z.infer<typeof PropsSchema>;
+export type ContainerProps = z.infer<typeof ContainerPropsSchema>;
+export type TextProps = z.infer<typeof TextPropsSchema>;
+export type ImageProps = z.infer<typeof ImagePropsSchema>;
+export type ButtonProps = z.infer<typeof ButtonPropsSchema>;
+export type SpacerProps = z.infer<typeof SpacerPropsSchema>;
+export type TableProps = z.infer<typeof TablePropsSchema>;
+export type DividerProps = z.infer<typeof DividerPropsSchema>;
+export type ListProps = z.infer<typeof ListPropsSchema>;
 
 export interface BuilderElement {
   id: string;
@@ -37,9 +159,44 @@ export interface BuilderElement {
   props: Props;
 }
 
-interface BuilderContextType {
+export interface DocumentPage {
+  id: string;
+  name: string;
   elements: BuilderElement[];
+}
+
+export interface DocumentSettings {
+  header: BuilderElement[];
+  footer: BuilderElement[];
+  pageSize: 'A4' | 'Letter' | 'Legal';
+  orientation: 'portrait' | 'landscape';
+  margins: {
+    top: string;
+    right: string;
+    bottom: string;
+    left: string;
+  };
+}
+
+const DEFAULT_DOCUMENT_SETTINGS: DocumentSettings = {
+  header: [],
+  footer: [],
+  pageSize: 'A4',
+  orientation: 'portrait',
+  margins: {
+    top: '20mm',
+    right: '20mm',
+    bottom: '20mm',
+    left: '20mm',
+  },
+};
+
+interface BuilderContextType {
+  pages: DocumentPage[];
+  currentPageId: string | null;
   selectedId: string | null;
+  documentSettings: DocumentSettings;
+  elements: BuilderElement[];
   setElements: (elements: BuilderElement[]) => void;
   addElement: (element: BuilderElement, parentId?: string) => void;
   removeElement: (id: string) => void;
@@ -53,177 +210,24 @@ interface BuilderContextType {
   isAncestorLocked: (id: string) => boolean;
   exportJSON: () => string;
   resetElements: () => void;
+  addPage: () => void;
+  removePage: (pageId: string) => void;
+  selectPage: (pageId: string) => void;
+  renamePage: (pageId: string, name: string) => void;
+  updateDocumentSettings: (settings: Partial<DocumentSettings>) => void;
+  addHeaderElement: (element: BuilderElement) => void;
+  addFooterElement: (element: BuilderElement) => void;
+  removeHeaderElement: (id: string) => void;
+  removeFooterElement: (id: string) => void;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
 
-interface BuilderProviderProps {
-  children: React.ReactNode;
-}
-
-// eslint-disable-next-line react/prop-types
-export const BuilderProvider: React.FC<BuilderProviderProps> = ({ children }) => {
-  const [elements, setElements] = useState<BuilderElement[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const addElement = useCallback((element: BuilderElement, parentId?: string) => {
-    if (parentId === undefined) {
-      setElements((prev) => [...prev, element]);
-    } else {
-      setElements((prev) =>
-        updateElementInTree(prev, parentId, (parent) => ({
-          ...parent,
-          children: [...parent.children, element],
-        })),
-      );
-    }
-  }, []);
-
-  const removeElement = useCallback(
-    (id: string) => {
-      if (selectedId === id) {
-        setSelectedId(null);
-      }
-      setElements((prev) => removeElementFromTree(prev, id));
-    },
-    [selectedId],
-  );
-
-  const updateElement = useCallback((id: string, updates: Partial<BuilderElement>) => {
-    setElements((prev) =>
-      updateElementInTree(prev, id, (element) => ({
-        ...element,
-        ...updates,
-      })),
-    );
-  }, []);
-
-  const selectElement = useCallback((id: string | null) => {
-    setSelectedId(id);
-  }, []);
-
-  const getSelectedElement = useCallback(() => {
-    return findElementInTree(elements, selectedId);
-  }, [elements, selectedId]);
-
-  const moveElement = useCallback((fromIndex: number, toIndex: number, parentId?: string) => {
-    setElements((prev) => {
-      if (parentId === undefined) {
-        const newElements = [...prev];
-        const [moved] = newElements.splice(fromIndex, 1);
-        newElements.splice(toIndex, 0, moved);
-        return newElements;
-      }
-      return updateElementInTree(prev, parentId, (parent) => {
-        const newChildren = [...parent.children];
-        const [moved] = newChildren.splice(fromIndex, 1);
-        newChildren.splice(toIndex, 0, moved);
-        return { ...parent, children: newChildren };
-      });
-    });
-  }, []);
-
-  const moveElementToContainer = useCallback((elementId: string, targetContainerId: string) => {
-    setElements((prev) => {
-      const elementToMove = findElementInTree(prev, elementId);
-      if (elementToMove === null) {
-        return prev;
-      }
-
-      const targetContainer = findElementInTree(prev, targetContainerId);
-      if (
-        targetContainer === null ||
-        (targetContainer.type !== 'row' && targetContainer.type !== 'column')
-      ) {
-        return prev;
-      }
-
-      const withoutElement = removeElementFromTree(prev, elementId);
-      return updateElementInTree(withoutElement, targetContainerId, (container) => ({
-        ...container,
-        children: [...container.children, elementToMove],
-      }));
-    });
-  }, []);
-
-  const findElement = useCallback(
-    (id: string) => {
-      return findElementInTree(elements, id);
-    },
-    [elements],
-  );
-
-  const toggleLock = useCallback((id: string) => {
-    setElements((prev) =>
-      updateElementInTree(prev, id, (element) => ({
-        ...element,
-        locked: element.locked !== true,
-      })),
-    );
-  }, []);
-
-  const isAncestorLocked = useCallback(
-    (id: string) => {
-      const checkAncestors = (elements: BuilderElement[], targetId: string): boolean => {
-        for (const element of elements) {
-          if (element.locked === true) {
-            return true;
-          }
-          if (
-            element.children.length > 0 &&
-            findElementInTree(element.children, targetId) !== null
-          ) {
-            return element.locked ?? checkAncestors(element.children, targetId);
-          }
-        }
-        return false;
-      };
-      return checkAncestors(elements, id);
-    },
-    [elements],
-  );
-
-  const exportJSON = useCallback(() => {
-    return JSON.stringify(elements, null, 2);
-  }, [elements]);
-
-  const resetElements = useCallback(() => {
-    setElements([]);
-    setSelectedId(null);
-  }, []);
-
-  return (
-    <BuilderContext.Provider
-      value={{
-        elements,
-        selectedId,
-        setElements,
-        addElement,
-        removeElement,
-        updateElement,
-        selectElement,
-        getSelectedElement,
-        moveElement,
-        moveElementToContainer,
-        findElement,
-        toggleLock,
-        isAncestorLocked,
-        exportJSON,
-        resetElements,
-      }}
-    >
-      {children}
-    </BuilderContext.Provider>
-  );
-};
-
-export const useBuilder = () => {
-  const context = useContext(BuilderContext);
-  if (context === undefined) {
-    throw new Error('useBuilder must be used within BuilderProvider');
-  }
-  return context;
-};
+const createDefaultPage = (index: number): DocumentPage => ({
+  id: `page-${Date.now()}-${index}`,
+  name: `Page ${index + 1}`,
+  elements: [],
+});
 
 // Helper functions
 const updateElementInTree = (
@@ -269,4 +273,425 @@ const findElementInTree = (
     }
   }
   return null;
+};
+
+const updatePageElements = (
+  pages: DocumentPage[],
+  targetPageId: string | undefined,
+  updater: (elements: BuilderElement[]) => BuilderElement[],
+): DocumentPage[] => {
+  return pages.map((page) => {
+    if (page.id !== targetPageId) {
+      return page;
+    }
+    return { ...page, elements: updater(page.elements) };
+  });
+};
+
+const addChildToElement = (parent: BuilderElement, child: BuilderElement): BuilderElement => ({
+  ...parent,
+  children: [...parent.children, child],
+});
+
+const addElementToPage = (
+  pages: DocumentPage[],
+  targetPageId: string | undefined,
+  element: BuilderElement,
+  parentId?: string,
+): DocumentPage[] => {
+  if (parentId === undefined) {
+    return updatePageElements(pages, targetPageId, (elements) => [...elements, element]);
+  }
+  return updatePageElements(pages, targetPageId, (elements) =>
+    updateElementInTree(elements, parentId, (parent) => addChildToElement(parent, element)),
+  );
+};
+
+const updateElementInPage = (
+  pages: DocumentPage[],
+  targetPageId: string | undefined,
+  elementId: string,
+  updates: Partial<BuilderElement>,
+): DocumentPage[] => {
+  return updatePageElements(pages, targetPageId, (elements) =>
+    updateElementInTree(elements, elementId, (element) => applyUpdates(element, updates)),
+  );
+};
+
+const moveElementInPage = (
+  pages: DocumentPage[],
+  targetPageId: string | undefined,
+  fromIndex: number,
+  toIndex: number,
+  parentId?: string,
+): DocumentPage[] => {
+  if (parentId === undefined) {
+    return updatePageElements(pages, targetPageId, (elements) => {
+      const newElements = [...elements];
+      const [moved] = newElements.splice(fromIndex, 1);
+      newElements.splice(toIndex, 0, moved);
+      return newElements;
+    });
+  }
+  return updatePageElements(pages, targetPageId, (elements) =>
+    updateElementInTree(elements, parentId, (parent) =>
+      reorderChildren(parent, fromIndex, toIndex),
+    ),
+  );
+};
+
+const toggleLockInPage = (
+  pages: DocumentPage[],
+  targetPageId: string | undefined,
+  elementId: string,
+): DocumentPage[] => {
+  return updatePageElements(pages, targetPageId, (elements) =>
+    updateElementInTree(elements, elementId, toggleElementLock),
+  );
+};
+
+const moveElementToContainerInPage = (
+  pages: DocumentPage[],
+  targetPageId: string | undefined,
+  currentPageData: DocumentPage,
+  elementId: string,
+  targetContainerId: string,
+): DocumentPage[] => {
+  const elementToMove = findElementInTree(currentPageData.elements, elementId);
+  if (elementToMove === null) {
+    return pages;
+  }
+
+  const targetContainer = findElementInTree(currentPageData.elements, targetContainerId);
+  if (
+    targetContainer === null ||
+    (targetContainer.type !== 'row' && targetContainer.type !== 'column')
+  ) {
+    return pages;
+  }
+
+  return updatePageElements(pages, targetPageId, (elements) => {
+    const withoutElement = removeElementFromTree(elements, elementId);
+    return updateElementInTree(withoutElement, targetContainerId, (container) =>
+      addChildToElement(container, elementToMove),
+    );
+  });
+};
+
+const applyUpdates = (
+  element: BuilderElement,
+  updates: Partial<BuilderElement>,
+): BuilderElement => ({
+  ...element,
+  ...updates,
+});
+
+const toggleElementLock = (element: BuilderElement): BuilderElement => ({
+  ...element,
+  locked: element.locked !== true,
+});
+
+const reorderChildren = (
+  parent: BuilderElement,
+  fromIndex: number,
+  toIndex: number,
+): BuilderElement => {
+  const newChildren = [...parent.children];
+  const [moved] = newChildren.splice(fromIndex, 1);
+  newChildren.splice(toIndex, 0, moved);
+  return { ...parent, children: newChildren };
+};
+
+const getTargetPageId = (
+  currentPageId: string | null,
+  pages: DocumentPage[],
+): string | undefined => {
+  return currentPageId ?? pages[0]?.id;
+};
+// eslint-disable-next-line max-statements
+export const BuilderProvider = ({ children }: { children: React.ReactNode }) => {
+  const initialPage = createDefaultPage(0);
+  const [pages, setPages] = useState<DocumentPage[]>([initialPage]);
+  const [currentPageId, setCurrentPageId] = useState<string | null>(initialPage.id);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [documentSettings, setDocumentSettings] =
+    useState<DocumentSettings>(DEFAULT_DOCUMENT_SETTINGS);
+
+  const currentPage = useMemo(() => {
+    if (pages.length === 0) {
+      return null;
+    }
+    return pages.find((p) => p.id === currentPageId) ?? pages[0];
+  }, [pages, currentPageId]);
+
+  const elements = useMemo(() => currentPage?.elements ?? [], [currentPage]);
+
+  const setElements = useCallback(
+    (newElements: BuilderElement[]) => {
+      setPages((prev) =>
+        prev.map((page) =>
+          page.id === getTargetPageId(currentPageId, prev)
+            ? { ...page, elements: newElements }
+            : page,
+        ),
+      );
+    },
+    [currentPageId],
+  );
+
+  const addElement = useCallback(
+    (element: BuilderElement, parentId?: string) => {
+      setPages((prev) =>
+        addElementToPage(prev, getTargetPageId(currentPageId, prev), element, parentId),
+      );
+    },
+    [currentPageId],
+  );
+
+  const removeElement = useCallback(
+    (id: string) => {
+      if (selectedId === id) {
+        setSelectedId(null);
+      }
+      setPages((prev) => {
+        const targetPageId = getTargetPageId(currentPageId, prev);
+        return updatePageElements(prev, targetPageId, (els) => removeElementFromTree(els, id));
+      });
+    },
+    [selectedId, currentPageId],
+  );
+
+  const updateElement = useCallback(
+    (id: string, updates: Partial<BuilderElement>) => {
+      setPages((prev) =>
+        updateElementInPage(prev, getTargetPageId(currentPageId, prev), id, updates),
+      );
+    },
+    [currentPageId],
+  );
+
+  const selectElement = useCallback((id: string | null) => {
+    setSelectedId(id);
+  }, []);
+
+  const getSelectedElement = useCallback(() => {
+    return findElementInTree(elements, selectedId);
+  }, [elements, selectedId]);
+
+  const moveElement = useCallback(
+    (fromIndex: number, toIndex: number, parentId?: string) => {
+      setPages((prev) =>
+        moveElementInPage(prev, getTargetPageId(currentPageId, prev), fromIndex, toIndex, parentId),
+      );
+    },
+    [currentPageId],
+  );
+
+  const moveElementToContainer = useCallback(
+    (elementId: string, targetContainerId: string) => {
+      setPages((prev) => {
+        const targetPageId = getTargetPageId(currentPageId, prev);
+        const currentPageData = prev.find((p) => p.id === targetPageId);
+        if (currentPageData === undefined) {
+          return prev;
+        }
+        return moveElementToContainerInPage(
+          prev,
+          targetPageId,
+          currentPageData,
+          elementId,
+          targetContainerId,
+        );
+      });
+    },
+    [currentPageId],
+  );
+
+  const findElement = useCallback(
+    (id: string) => {
+      return findElementInTree(elements, id);
+    },
+    [elements],
+  );
+
+  const toggleLock = useCallback(
+    (id: string) => {
+      setPages((prev) => toggleLockInPage(prev, getTargetPageId(currentPageId, prev), id));
+    },
+    [currentPageId],
+  );
+
+  const isAncestorLocked = useCallback(
+    (id: string) => {
+      const checkAncestors = (
+        elementsList: BuilderElement[],
+        targetId: string,
+        ancestorLocked: boolean,
+      ): boolean | null => {
+        for (const element of elementsList) {
+          if (element.id === targetId) {
+            return ancestorLocked;
+          }
+          if (element.children.length > 0) {
+            const foundInChildren = checkAncestors(
+              element.children,
+              targetId,
+              ancestorLocked || element.locked === true,
+            );
+            if (foundInChildren !== null) {
+              return foundInChildren;
+            }
+          }
+        }
+        return null;
+      };
+      return checkAncestors(elements, id, false) ?? false;
+    },
+    [elements],
+  );
+
+  const exportJSON = useCallback(() => {
+    return JSON.stringify({ pages, documentSettings }, null, 2);
+  }, [pages, documentSettings]);
+
+  const resetElements = useCallback(() => {
+    setPages([createDefaultPage(0)]);
+    setCurrentPageId(null);
+    setSelectedId(null);
+    setDocumentSettings(DEFAULT_DOCUMENT_SETTINGS);
+  }, []);
+
+  const addPage = useCallback(() => {
+    const newPage = createDefaultPage(pages.length);
+    setPages((prev) => [...prev, newPage]);
+    setCurrentPageId(newPage.id);
+  }, [pages.length]);
+
+  const removePage = useCallback(
+    (pageId: string) => {
+      if (pages.length <= 1) {
+        return;
+      }
+      setPages((prev) => {
+        const filtered = prev.filter((p) => p.id !== pageId);
+        if (currentPageId === pageId) {
+          setCurrentPageId(filtered[0]?.id ?? null);
+        }
+        return filtered;
+      });
+    },
+    [pages.length, currentPageId],
+  );
+
+  const selectPage = useCallback((pageId: string) => {
+    setCurrentPageId(pageId);
+    setSelectedId(null);
+  }, []);
+
+  const renamePage = useCallback((pageId: string, name: string) => {
+    setPages((prev) => prev.map((page) => (page.id === pageId ? { ...page, name } : page)));
+  }, []);
+
+  const updateDocumentSettings = useCallback((settings: Partial<DocumentSettings>) => {
+    setDocumentSettings((prev) => ({ ...prev, ...settings }));
+  }, []);
+
+  const addHeaderElement = useCallback((element: BuilderElement) => {
+    setDocumentSettings((prev) => ({
+      ...prev,
+      header: [...prev.header, element],
+    }));
+  }, []);
+
+  const addFooterElement = useCallback((element: BuilderElement) => {
+    setDocumentSettings((prev) => ({
+      ...prev,
+      footer: [...prev.footer, element],
+    }));
+  }, []);
+
+  const removeHeaderElement = useCallback((id: string) => {
+    setDocumentSettings((prev) => ({
+      ...prev,
+      header: removeElementFromTree(prev.header, id),
+    }));
+  }, []);
+
+  const removeFooterElement = useCallback((id: string) => {
+    setDocumentSettings((prev) => ({
+      ...prev,
+      footer: removeElementFromTree(prev.footer, id),
+    }));
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      pages,
+      currentPageId,
+      selectedId,
+      documentSettings,
+      elements,
+      setElements,
+      addElement,
+      removeElement,
+      updateElement,
+      selectElement,
+      getSelectedElement,
+      moveElement,
+      moveElementToContainer,
+      findElement,
+      toggleLock,
+      isAncestorLocked,
+      exportJSON,
+      resetElements,
+      addPage,
+      removePage,
+      selectPage,
+      renamePage,
+      updateDocumentSettings,
+      addHeaderElement,
+      addFooterElement,
+      removeHeaderElement,
+      removeFooterElement,
+    }),
+    [
+      pages,
+      currentPageId,
+      selectedId,
+      documentSettings,
+      elements,
+      setElements,
+      addElement,
+      removeElement,
+      updateElement,
+      selectElement,
+      getSelectedElement,
+      moveElement,
+      moveElementToContainer,
+      findElement,
+      toggleLock,
+      isAncestorLocked,
+      exportJSON,
+      resetElements,
+      addPage,
+      removePage,
+      selectPage,
+      renamePage,
+      updateDocumentSettings,
+      addHeaderElement,
+      addFooterElement,
+      removeHeaderElement,
+      removeFooterElement,
+    ],
+  );
+
+  return <BuilderContext.Provider value={contextValue}>{children}</BuilderContext.Provider>;
+};
+
+export const useBuilder = () => {
+  const context = useContext(BuilderContext);
+  if (context === undefined) {
+    throw new Error('useBuilder must be used within BuilderProvider');
+  }
+  return context;
 };

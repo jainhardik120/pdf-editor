@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -46,6 +46,91 @@ const otpSchema = z.object({
 
 const ENTER_THE_CODE = 'Enter the code';
 
+interface LoginFormFooterProps {
+  passkeyAvailable: boolean;
+  signInUsingPasskey: () => void;
+  redirectUrl: string;
+}
+
+const LoginFormFooter = ({
+  passkeyAvailable,
+  signInUsingPasskey,
+  redirectUrl,
+}: LoginFormFooterProps): ReactNode => (
+  <>
+    <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+      Or continue with
+    </FieldSeparator>
+    <Field>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={async () => {
+          await signIn.social({ provider: 'github' });
+        }}
+      >
+        <GitHubLogoIcon />
+        Login with GitHub
+      </Button>
+      <Button
+        disabled={!passkeyAvailable}
+        type="button"
+        variant="outline"
+        onClick={() => {
+          signInUsingPasskey();
+        }}
+      >
+        <Fingerprint />
+        Login with Passkey
+      </Button>
+      <FieldDescription className="text-center">
+        Don&apos;t have an account?{' '}
+        <Link
+          className="underline underline-offset-4"
+          href={`/auth/register?redirect=${redirectUrl}`}
+        >
+          Sign up
+        </Link>
+      </FieldDescription>
+    </Field>
+  </>
+);
+
+interface TwoFactorFooterProps {
+  redirectUrl: string;
+}
+
+const TwoFactorFooter = ({ redirectUrl }: TwoFactorFooterProps): ReactNode => (
+  <Field>
+    <FieldDescription className="text-center">
+      <Link
+        className="underline underline-offset-4"
+        href={`/auth/email-otp?redirect=${redirectUrl}`}
+      >
+        Switch to Email Verification
+      </Link>
+    </FieldDescription>
+  </Field>
+);
+
+interface EmailOTPFooterProps {
+  loading: boolean;
+  emailSent: boolean;
+  onRequestOtp: () => void;
+}
+
+const EmailOTPFooter = ({ loading, emailSent, onRequestOtp }: EmailOTPFooterProps): ReactNode => (
+  <>
+    {!emailSent ? (
+      <Field>
+        <Button disabled={loading} type="button" variant="outline" onClick={onRequestOtp}>
+          Send OTP to Email
+        </Button>
+      </Field>
+    ) : null}
+  </>
+);
+
 export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [passkeyAvailable, setPasskeyAvailable] = useState(false);
@@ -84,47 +169,15 @@ export const LoginForm = () => {
 
   return (
     <DynamicForm
-      FormFooter={() => {
-        return (
-          <>
-            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-              Or continue with
-            </FieldSeparator>
-            <Field>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                  await signIn.social({ provider: 'github' });
-                }}
-              >
-                <GitHubLogoIcon />
-                Login with GitHub
-              </Button>
-              <Button
-                disabled={!passkeyAvailable}
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  void signInUsingPasskey();
-                }}
-              >
-                <Fingerprint />
-                Login with Passkey
-              </Button>
-              <FieldDescription className="text-center">
-                Don&apos;t have an account?{' '}
-                <Link
-                  className="underline underline-offset-4"
-                  href={`/auth/register?redirect=${searchParams.redirect}`}
-                >
-                  Sign up
-                </Link>
-              </FieldDescription>
-            </Field>
-          </>
-        );
-      }}
+      FormFooter={() => (
+        <LoginFormFooter
+          passkeyAvailable={passkeyAvailable}
+          redirectUrl={searchParams.redirect}
+          signInUsingPasskey={() => {
+            void signInUsingPasskey();
+          }}
+        />
+      )}
       defaultValues={{
         email: '',
         password: '',
@@ -386,20 +439,7 @@ export const TwoFactorForm = () => {
   const router = useRouter();
   return (
     <DynamicForm
-      FormFooter={() => {
-        return (
-          <Field>
-            <FieldDescription className="text-center">
-              <Link
-                className="underline underline-offset-4"
-                href={`/auth/email-otp?redirect=${searchParams.redirect}`}
-              >
-                Switch to Email Verification
-              </Link>
-            </FieldDescription>
-          </Field>
-        );
-      }}
+      FormFooter={() => <TwoFactorFooter redirectUrl={searchParams.redirect} />}
       defaultValues={{
         code: '',
       }}
@@ -454,19 +494,15 @@ export const EmailOTPForm = () => {
   };
   return (
     <DynamicForm
-      FormFooter={() => {
-        return (
-          <>
-            {!emailSent && (
-              <Field>
-                <Button disabled={loading} type="button" variant="outline" onClick={requestOtp}>
-                  Send OTP to Email
-                </Button>
-              </Field>
-            )}
-          </>
-        );
-      }}
+      FormFooter={() => (
+        <EmailOTPFooter
+          emailSent={emailSent}
+          loading={loading}
+          onRequestOtp={() => {
+            void requestOtp();
+          }}
+        />
+      )}
       defaultValues={{
         code: '',
       }}
