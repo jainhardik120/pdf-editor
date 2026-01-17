@@ -20,10 +20,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  SIDEBAR_COOKIE_MAX_AGE_SECONDS,
+  RANDOM_WIDTH_MIN,
+  RANDOM_WIDTH_MAX,
+} from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const SIDEBAR_COOKIE_MAX_AGE = SIDEBAR_COOKIE_MAX_AGE_SECONDS;
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
@@ -548,7 +553,7 @@ const SidebarMenuSkeleton = ({
 }) => {
   // Random width between 50 to 90%.
   const [width] = React.useState(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
+    return `${Math.floor(Math.random() * RANDOM_WIDTH_MIN) + RANDOM_WIDTH_MAX}%`;
   });
 
   return (
