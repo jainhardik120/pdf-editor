@@ -155,6 +155,7 @@ export const LoginForm = () => {
 
   useEffect(() => {
     const check = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, sonarjs/different-types-comparison -- SSR check
       if (typeof window === 'undefined' || window.PublicKeyCredential === undefined) {
         return;
       }

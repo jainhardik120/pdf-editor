@@ -46,6 +46,7 @@ const InputOTPSlot = ({
 }) => {
   const inputOTPContext = React.useContext(OTPInputContext);
   const slot = inputOTPContext.slots[index];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Array access can return undefined
   const { char, hasFakeCaret, isActive } = slot ?? {};
 
   return (
