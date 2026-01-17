@@ -1,4 +1,3 @@
-/* eslint-disable no-param-reassign */
 'use client';
 
 import * as React from 'react';
@@ -20,10 +19,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  SIDEBAR_COOKIE_MAX_AGE_SECONDS,
+  RANDOM_WIDTH_MIN,
+  RANDOM_WIDTH_MAX,
+} from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const SIDEBAR_COOKIE_MAX_AGE = SIDEBAR_COOKIE_MAX_AGE_SECONDS;
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
@@ -43,7 +47,7 @@ const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
 const useSidebar = () => {
   const context = React.useContext(SidebarContext);
-  if (!context) {
+  if (context === null) {
     throw new Error('useSidebar must be used within a SidebarProvider.');
   }
 
@@ -73,7 +77,7 @@ const SidebarProvider = ({
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === 'function' ? value(open) : value;
-      if (setOpenProp) {
+      if (setOpenProp !== undefined) {
         setOpenProp(openState);
       } else {
         _setOpen(openState);
@@ -87,7 +91,11 @@ const SidebarProvider = ({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
+    if (isMobile) {
+      setOpenMobile((open) => !open);
+    } else {
+      setOpen((open) => !open);
+    }
   }, [isMobile, setOpen, setOpenMobile]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
@@ -478,15 +486,11 @@ const SidebarMenuButton = ({
     />
   );
 
-  if (!tooltip) {
+  if (typeof tooltip === 'string' || tooltip === undefined) {
     return button;
   }
 
-  if (typeof tooltip === 'string') {
-    tooltip = {
-      children: tooltip,
-    };
-  }
+  const tooltipProps = typeof tooltip === 'string' ? { children: tooltip } : tooltip;
 
   return (
     <Tooltip>
@@ -495,7 +499,7 @@ const SidebarMenuButton = ({
         align="center"
         hidden={state !== 'collapsed' || isMobile}
         side="right"
-        {...tooltip}
+        {...tooltipProps}
       />
     </Tooltip>
   );
@@ -548,7 +552,8 @@ const SidebarMenuSkeleton = ({
 }) => {
   // Random width between 50 to 90%.
   const [width] = React.useState(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
+    // eslint-disable-next-line sonarjs/pseudo-random -- UI skeleton width, not security-sensitive
+    return `${Math.floor(Math.random() * RANDOM_WIDTH_MIN) + RANDOM_WIDTH_MAX}%`;
   });
 
   return (

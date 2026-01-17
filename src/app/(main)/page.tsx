@@ -8,6 +8,7 @@ import { ArrowRight, FileText, Layout, Layers, Zap, Check, BarChart3, Clock } fr
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SetHeader } from '@/hooks/use-header-store';
+import { ANIMATION_DELAY_MULTIPLIER } from '@/lib/constants';
 
 const features = [
   {
@@ -151,7 +152,7 @@ export default function Home() {
               <Card
                 key={feature.title}
                 className="group border-border hover:border-primary/50 animate-fadeInUp cursor-pointer overflow-hidden transition-all duration-300 hover:shadow-xl"
-                style={{ animationDelay: `${idx * 100}ms` }}
+                style={{ animationDelay: `${idx * ANIMATION_DELAY_MULTIPLIER}ms` }}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start gap-4">
@@ -273,7 +274,7 @@ export default function Home() {
               <div
                 key={useCase.title}
                 className="border-border bg-card hover:border-primary/50 group animate-fadeInUp cursor-pointer rounded-lg border p-6 text-center transition-all duration-300 hover:shadow-lg"
-                style={{ animationDelay: `${idx * 100}ms` }}
+                style={{ animationDelay: `${idx * ANIMATION_DELAY_MULTIPLIER}ms` }}
               >
                 <div className="mb-3 text-4xl transition-transform duration-300 group-hover:scale-110">
                   {useCase.icon}

@@ -17,5 +17,5 @@ export const useIsMobile = () => {
     };
   }, []);
 
-  return !!isMobile;
+  return isMobile === true;
 };

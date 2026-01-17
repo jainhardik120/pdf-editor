@@ -15,6 +15,12 @@ import sonarjs from 'eslint-plugin-sonarjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// ESLint configuration constants (magic numbers are acceptable here)
+const MAX_NESTED_CALLBACKS = 3;
+const MAX_STATEMENTS = 30;
+const SONARJS_COGNITIVE_COMPLEXITY = 15;
+const SONARJS_MAX_SWITCH_CASES = 10;
+
 const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
@@ -242,14 +248,14 @@ const eslintConfig = defineConfig([
           skipComments: true,
         },
       ],
-      'max-nested-callbacks': ['error', 3],
+      'max-nested-callbacks': ['error', MAX_NESTED_CALLBACKS],
       'max-params': [
         'warn',
         {
           max: 5,
         },
       ],
-      'max-statements': ['error', 30],
+      'max-statements': ['error', MAX_STATEMENTS],
       'max-statements-per-line': [
         'error',
         {
@@ -372,10 +378,10 @@ const eslintConfig = defineConfig([
       'security/detect-object-injection': 'off',
       'security/detect-unsafe-regex': 'error',
       semi: ['error', 'always'],
-      'sonarjs/cognitive-complexity': ['off', 15],
+      'sonarjs/cognitive-complexity': ['off', SONARJS_COGNITIVE_COMPLEXITY],
       'sonarjs/different-types-comparison': 'warn',
       'sonarjs/function-return-type': 'warn',
-      'sonarjs/max-switch-cases': ['warn', 10],
+      'sonarjs/max-switch-cases': ['warn', SONARJS_MAX_SWITCH_CASES],
       'sonarjs/no-collapsible-if': 'warn',
       'sonarjs/no-commented-code': 'warn',
       'sonarjs/no-duplicate-string': [
