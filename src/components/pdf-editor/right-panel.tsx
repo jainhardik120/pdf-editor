@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 
 import Papa from 'papaparse';
 
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useBuilder,
@@ -22,6 +23,7 @@ import {
   ALIGN_ITEMS_OPTIONS,
   DIVIDER_STYLE_OPTIONS,
   LIST_TYPE_OPTIONS,
+  type BuilderElement,
 } from '@/contexts/builder-context';
 
 type PropertyKey =
@@ -238,6 +240,10 @@ const CsvPropertyField = ({
 
   const [localCsv, setLocalCsv] = useState(csvString);
 
+  useEffect(() => {
+    setLocalCsv(csvString);
+  }, [csvString]);
+
   const handleCsvChange = useCallback(
     (text: string) => {
       setLocalCsv(text);
@@ -290,6 +296,10 @@ const ListPropertyField = ({
   }, [value]);
 
   const [localList, setLocalList] = useState(listString);
+
+  useEffect(() => {
+    setLocalList(listString);
+  }, [listString]);
 
   const handleListChange = useCallback(
     (text: string) => {
@@ -421,20 +431,22 @@ const QuickColors = ({ onColorSelect, disabled }: QuickColorsProps) => (
 );
 
 const EmptyState = () => (
-  <div className="bg-card border-border flex h-full w-64 flex-col border-l">
-    <div className="border-border h-12 border-b px-3 py-2">
-      <h2 className="text-foreground text-xs font-semibold">Properties</h2>
-    </div>
-    <div className="flex flex-1 items-center justify-center">
-      <p className="text-muted-foreground text-center text-xs">Select an element to edit</p>
-    </div>
+  <div className="flex flex-1 items-center justify-center">
+    <p className="text-muted-foreground text-center text-xs">Select an element to edit</p>
   </div>
 );
 
-export const RightPanel = () => {
-  const { selectedId, getSelectedElement, updateElement } = useBuilder();
-  const element = getSelectedElement();
+interface ElementPropertiesPanelProps {
+  element: BuilderElement | null;
+  selectedId: string | null;
+  updateElement: (id: string, updates: Partial<BuilderElement>) => void;
+}
 
+const ElementPropertiesPanel = ({
+  element,
+  selectedId,
+  updateElement,
+}: ElementPropertiesPanelProps) => {
   const handlePropertyChange = useCallback(
     (key: PropertyKey, value: string | string[] | string[][]) => {
       if (selectedId === null || element === null) {
@@ -467,10 +479,9 @@ export const RightPanel = () => {
   }
 
   return (
-    <div className="bg-card border-border flex h-full w-64 flex-col border-l">
-      <div className="border-border h-12 border-b px-3 py-2">
-        <h2 className="text-foreground text-xs font-semibold">Properties</h2>
-        <p className="text-muted-foreground mt-0.5 text-xs capitalize">{element.type}</p>
+    <div className="flex flex-1 flex-col">
+      <div className="border-border border-b px-3 py-2">
+        <p className="text-muted-foreground text-xs capitalize">{element.type}</p>
       </div>
 
       <ScrollArea className="flex-1">
@@ -566,6 +577,285 @@ export const RightPanel = () => {
           handlePropertyChange('backgroundColor', color);
         }}
       />
+    </div>
+  );
+};
+
+const PAGE_SIZE_OPTIONS = ['A4', 'Letter', 'Legal'] as const;
+const ORIENTATION_OPTIONS = ['portrait', 'landscape'] as const;
+
+const DocumentSettingsPanel = () => {
+  const { documentSettings, updateDocumentSettings } = useBuilder();
+
+  return (
+    <ScrollArea className="flex-1">
+      <div className="space-y-4 p-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">Page Size</Label>
+          <Select
+            value={documentSettings.pageSize}
+            onValueChange={(value: 'A4' | 'Letter' | 'Legal') => {
+              updateDocumentSettings({ pageSize: value });
+            }}
+          >
+            <SelectTrigger className="h-8 w-full text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={size}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">Orientation</Label>
+          <Select
+            value={documentSettings.orientation}
+            onValueChange={(value: 'portrait' | 'landscape') => {
+              updateDocumentSettings({ orientation: value });
+            }}
+          >
+            <SelectTrigger className="h-8 w-full text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ORIENTATION_OPTIONS.map((orientation) => (
+                <SelectItem key={orientation} value={orientation}>
+                  {orientation.charAt(0).toUpperCase() + orientation.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Margins</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Top</Label>
+              <Input
+                className="h-8 text-xs"
+                value={documentSettings.margins.top}
+                onChange={(e) => {
+                  updateDocumentSettings({
+                    margins: { ...documentSettings.margins, top: e.target.value },
+                  });
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Right</Label>
+              <Input
+                className="h-8 text-xs"
+                value={documentSettings.margins.right}
+                onChange={(e) => {
+                  updateDocumentSettings({
+                    margins: { ...documentSettings.margins, right: e.target.value },
+                  });
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Bottom</Label>
+              <Input
+                className="h-8 text-xs"
+                value={documentSettings.margins.bottom}
+                onChange={(e) => {
+                  updateDocumentSettings({
+                    margins: { ...documentSettings.margins, bottom: e.target.value },
+                  });
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Left</Label>
+              <Input
+                className="h-8 text-xs"
+                value={documentSettings.margins.left}
+                onChange={(e) => {
+                  updateDocumentSettings({
+                    margins: { ...documentSettings.margins, left: e.target.value },
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </ScrollArea>
+  );
+};
+
+interface HeaderFooterItemProps {
+  element: BuilderElement;
+  onRemove: (id: string) => void;
+}
+
+const HeaderFooterItem = ({ element, onRemove }: HeaderFooterItemProps) => (
+  <div className="bg-muted border-border flex items-center justify-between rounded border p-2">
+    <div>
+      <p className="text-xs font-medium capitalize">{element.type}</p>
+      {element.props.text !== undefined ? (
+        <p className="text-muted-foreground max-w-[120px] truncate text-xs">{element.props.text}</p>
+      ) : null}
+    </div>
+    <Button
+      aria-label="Remove element"
+      className="text-destructive h-6 w-6 p-0"
+      size="sm"
+      variant="ghost"
+      onClick={() => {
+        onRemove(element.id);
+      }}
+    >
+      ×
+    </Button>
+  </div>
+);
+
+interface AddElementButtonsProps {
+  onAddText: () => void;
+  onAddImage: () => void;
+}
+
+const AddElementButtons = ({ onAddText, onAddImage }: AddElementButtonsProps) => (
+  <div className="flex gap-2">
+    <Button className="h-7 flex-1 text-xs" size="sm" variant="outline" onClick={onAddText}>
+      + Text
+    </Button>
+    <Button className="h-7 flex-1 text-xs" size="sm" variant="outline" onClick={onAddImage}>
+      + Image
+    </Button>
+  </div>
+);
+
+const HeaderFooterPanel = () => {
+  const {
+    documentSettings,
+    addHeaderElement,
+    addFooterElement,
+    removeHeaderElement,
+    removeFooterElement,
+  } = useBuilder();
+
+  const handleAddHeaderText = useCallback(() => {
+    const element: BuilderElement = {
+      id: `header-text-${Date.now()}`,
+      type: 'text',
+      children: [],
+      props: { text: 'Header text', fontSize: '12px', color: 'inherit' },
+    };
+    addHeaderElement(element);
+  }, [addHeaderElement]);
+
+  const handleAddHeaderImage = useCallback(() => {
+    const element: BuilderElement = {
+      id: `header-image-${Date.now()}`,
+      type: 'image',
+      children: [],
+      props: { width: '100px', height: '40px', backgroundColor: '#2a2a2a' },
+    };
+    addHeaderElement(element);
+  }, [addHeaderElement]);
+
+  const handleAddFooterText = useCallback(() => {
+    const element: BuilderElement = {
+      id: `footer-text-${Date.now()}`,
+      type: 'text',
+      children: [],
+      props: { text: 'Footer text', fontSize: '10px', color: '#666666' },
+    };
+    addFooterElement(element);
+  }, [addFooterElement]);
+
+  const handleAddFooterImage = useCallback(() => {
+    const element: BuilderElement = {
+      id: `footer-image-${Date.now()}`,
+      type: 'image',
+      children: [],
+      props: { width: '80px', height: '30px', backgroundColor: '#2a2a2a' },
+    };
+    addFooterElement(element);
+  }, [addFooterElement]);
+
+  return (
+    <ScrollArea className="flex-1">
+      <div className="space-y-4 p-3">
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Header Elements</Label>
+          <p className="text-muted-foreground text-xs">
+            Elements that appear at the top of every page
+          </p>
+          <div className="space-y-1">
+            {documentSettings.header.map((element) => (
+              <HeaderFooterItem key={element.id} element={element} onRemove={removeHeaderElement} />
+            ))}
+          </div>
+          <AddElementButtons onAddImage={handleAddHeaderImage} onAddText={handleAddHeaderText} />
+        </div>
+
+        <div className="border-border border-t pt-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Footer Elements</Label>
+            <p className="text-muted-foreground text-xs">
+              Elements that appear at the bottom of every page
+            </p>
+            <div className="space-y-1">
+              {documentSettings.footer.map((element) => (
+                <HeaderFooterItem
+                  key={element.id}
+                  element={element}
+                  onRemove={removeFooterElement}
+                />
+              ))}
+            </div>
+            <AddElementButtons onAddImage={handleAddFooterImage} onAddText={handleAddFooterText} />
+          </div>
+        </div>
+      </div>
+    </ScrollArea>
+  );
+};
+
+export const RightPanel = () => {
+  const { selectedId, getSelectedElement, updateElement } = useBuilder();
+  const element = getSelectedElement();
+
+  return (
+    <div className="bg-card border-border flex h-full w-64 flex-col border-l">
+      <Tabs className="flex flex-1 flex-col" defaultValue="properties">
+        <TabsList className="border-border mx-2 mt-2 grid w-auto grid-cols-3">
+          <TabsTrigger className="text-xs" value="properties">
+            Element
+          </TabsTrigger>
+          <TabsTrigger className="text-xs" value="document">
+            Document
+          </TabsTrigger>
+          <TabsTrigger className="text-xs" value="headerFooter">
+            Header
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent className="mt-0 flex flex-1 flex-col" value="properties">
+          <ElementPropertiesPanel
+            element={element}
+            selectedId={selectedId}
+            updateElement={updateElement}
+          />
+        </TabsContent>
+
+        <TabsContent className="mt-0 flex flex-1 flex-col" value="document">
+          <DocumentSettingsPanel />
+        </TabsContent>
+
+        <TabsContent className="mt-0 flex flex-1 flex-col" value="headerFooter">
+          <HeaderFooterPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

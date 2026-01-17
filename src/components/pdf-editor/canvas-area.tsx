@@ -15,19 +15,26 @@ import { CanvasElement } from './canvas-element';
 import { PageNavigation } from './page-navigation';
 
 const DRAG_CLASSES = ['ring-1', 'ring-accent/50'];
+const ELEMENT_ID_DATA_KEY = 'element-id';
 
 const PAGE_HEIGHT = '1123px'; // A4 height at 96 DPI
 const PAGE_WIDTH = '794px'; // A4 width at 96 DPI
 
 export const CanvasArea = () => {
-  const { elements, addElement, selectedId, selectElement, documentSettings } = useBuilder();
+  const { elements, addElement, selectedId, selectElement, documentSettings, moveElementToRoot } =
+    useBuilder();
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    if (canvasRef.current !== null) {
-      canvasRef.current.classList.add(...DRAG_CLASSES);
+    const isMovingElement = e.dataTransfer.types.includes(ELEMENT_ID_DATA_KEY);
+    const isNewComponent = e.dataTransfer.types.includes('component-type');
+
+    if (isMovingElement || isNewComponent) {
+      e.dataTransfer.dropEffect = isMovingElement ? 'move' : 'copy';
+      if (canvasRef.current !== null) {
+        canvasRef.current.classList.add(...DRAG_CLASSES);
+      }
     }
   }, []);
 
@@ -42,6 +49,12 @@ export const CanvasArea = () => {
       e.preventDefault();
       if (canvasRef.current !== null) {
         canvasRef.current.classList.remove(...DRAG_CLASSES);
+      }
+
+      const elementId = e.dataTransfer.getData(ELEMENT_ID_DATA_KEY);
+      if (typeof elementId === 'string' && elementId.length > 0) {
+        moveElementToRoot(elementId);
+        return;
       }
 
       const componentType = e.dataTransfer.getData('component-type');
@@ -63,7 +76,7 @@ export const CanvasArea = () => {
         addElement(newElement);
       }
     },
-    [addElement],
+    [addElement, moveElementToRoot],
   );
 
   const handleCanvasClick = useCallback(() => {

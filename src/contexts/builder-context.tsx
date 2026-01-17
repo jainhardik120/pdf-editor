@@ -208,6 +208,7 @@ interface BuilderContextType {
   getSelectedElement: () => BuilderElement | null;
   moveElement: (fromIndex: number, toIndex: number, parentId?: string) => void;
   moveElementToContainer: (elementId: string, targetContainerId: string) => void;
+  moveElementToRoot: (elementId: string) => void;
   findElement: (id: string) => BuilderElement | null;
   toggleLock: (id: string) => void;
   isAncestorLocked: (id: string) => boolean;
@@ -560,6 +561,34 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
     [currentPageId],
   );
 
+  const moveElementToRoot = useCallback(
+    (elementId: string) => {
+      setPages((prev) => {
+        const targetPageId = getTargetPageId(currentPageId, prev);
+        const currentPageData = prev.find((p) => p.id === targetPageId);
+        if (currentPageData === undefined) {
+          return prev;
+        }
+
+        const elementToMove = findElementInTree(currentPageData.elements, elementId);
+        if (elementToMove === null) {
+          return prev;
+        }
+
+        const isAlreadyAtRoot = currentPageData.elements.some((el) => el.id === elementId);
+        if (isAlreadyAtRoot) {
+          return prev;
+        }
+
+        return updatePageElements(prev, targetPageId, (elements) => {
+          const withoutElement = removeElementFromTree(elements, elementId);
+          return [...withoutElement, elementToMove];
+        });
+      });
+    },
+    [currentPageId],
+  );
+
   const findElement = useCallback(
     (id: string) => {
       return findElementInTree(elements, id);
@@ -722,6 +751,7 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
       getSelectedElement,
       moveElement,
       moveElementToContainer,
+      moveElementToRoot,
       findElement,
       toggleLock,
       isAncestorLocked,
@@ -755,6 +785,7 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
       getSelectedElement,
       moveElement,
       moveElementToContainer,
+      moveElementToRoot,
       findElement,
       toggleLock,
       isAncestorLocked,
