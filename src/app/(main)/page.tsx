@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
 import { ArrowRight, FileText, Layout, Layers, Zap, Check, BarChart3, Clock } from 'lucide-react';
@@ -51,7 +52,7 @@ export default function Home() {
       <SetHeader backNavigation="" primarySubText="" primaryText="PDF Editor" secondaryText="" />
 
       {/* Hero Section - Premium and Bold */}
-      <section className="from-background via-background to-secondary/20 relative w-full overflow-hidden bg-gradient-to-br">
+      <section className="from-background via-background to-secondary/20 relative w-full overflow-hidden bg-linear-to-br">
         {/* Background decoration */}
         <div className="absolute inset-0 opacity-30">
           <div className="bg-primary/10 absolute top-20 right-10 h-72 w-72 rounded-full blur-3xl" />
@@ -68,7 +69,7 @@ export default function Home() {
 
           <h1 className="animate-fadeInUp mb-6 text-5xl leading-tight font-bold tracking-tight text-balance sm:text-7xl">
             Create Beautiful PDF Templates
-            <span className="from-primary to-accent mt-2 block bg-gradient-to-r bg-clip-text text-transparent">
+            <span className="from-primary to-accent mt-2 block bg-linear-to-r bg-clip-text text-transparent">
               Without the Complexity
             </span>
           </h1>
@@ -104,13 +105,15 @@ export default function Home() {
 
           {/* Hero Visual - Placeholder for screenshot */}
           <div className="animate-scaleIn mx-auto w-full max-w-4xl">
-            <div className="from-card to-card/50 border-border relative overflow-hidden rounded-lg border bg-gradient-to-b shadow-2xl">
-              <img
+            <div className="from-card to-card/50 border-border relative overflow-hidden rounded-lg border bg-linear-to-b shadow-2xl">
+              <Image
                 alt="PDF Editor Interface"
                 className="h-auto w-full"
-                src="/pdf-editor-interface-with-drag-and-drop-components.jpg"
+                height={500}
+                src="/images/pdf-editor-interface-with-drag-and-drop-components.jpg"
+                width={1000}
               />
-              <div className="from-background/20 absolute inset-0 bg-gradient-to-t to-transparent" />
+              <div className="from-background/20 absolute inset-0 bg-linear-to-t to-transparent" />
             </div>
           </div>
         </div>
@@ -169,7 +172,7 @@ export default function Home() {
                   <ul className="space-y-2">
                     {feature.benefits.map((benefit) => (
                       <li key={benefit} className="flex items-center gap-2 text-sm">
-                        <Check className="text-accent h-4 w-4 flex-shrink-0" />
+                        <Check className="text-accent h-4 w-4 shrink-0" />
                         <span className="text-foreground">{benefit}</span>
                       </li>
                     ))}
@@ -206,20 +209,24 @@ export default function Home() {
               </ul>
             </div>
             <div className="animate-scaleIn">
-              <img
+              <Image
                 alt="PDF Output Examples"
                 className="border-border w-full rounded-lg border shadow-lg"
-                src="/professional-pdf-documents-output-showcase.jpg"
+                height={500}
+                src="/images/professional-pdf-documents-output-showcase.jpg"
+                width={1000}
               />
             </div>
           </div>
 
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div className="animate-scaleIn order-2 md:order-1">
-              <img
+              <Image
                 alt="Template Features"
                 className="border-border w-full rounded-lg border shadow-lg"
-                src="/template-reusability-and-dynamic-data-features.jpg"
+                height={500}
+                src="/images/template-reusability-and-dynamic-data-features.jpg"
+                width={1000}
               />
             </div>
             <div className="animate-slideInLeft order-1 md:order-2">
@@ -280,7 +287,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section - Bold Call to Action */}
-      <section className="from-primary/10 to-accent/10 border-border w-full border-t border-b bg-gradient-to-r px-4 py-24">
+      <section className="from-primary/10 to-accent/10 border-border w-full border-t border-b bg-linear-to-r px-4 py-24">
         <div className="animate-fadeInUp mx-auto max-w-4xl text-center">
           <h2 className="mb-6 text-4xl font-bold sm:text-5xl">Ready to Get Started?</h2>
           <p className="text-muted-foreground mx-auto mb-10 max-w-2xl text-xl">
