@@ -170,6 +170,7 @@ export const LoginForm = () => {
 
   return (
     <DynamicForm
+      // eslint-disable-next-line react/no-unstable-nested-components -- FormFooter component with closure over local state
       FormFooter={() => (
         <LoginFormFooter
           passkeyAvailable={passkeyAvailable}
@@ -440,6 +441,7 @@ export const TwoFactorForm = () => {
   const router = useRouter();
   return (
     <DynamicForm
+      // eslint-disable-next-line react/no-unstable-nested-components -- FormFooter component with closure over local state
       FormFooter={() => <TwoFactorFooter redirectUrl={searchParams.redirect} />}
       defaultValues={{
         code: '',
@@ -495,6 +497,7 @@ export const EmailOTPForm = () => {
   };
   return (
     <DynamicForm
+      // eslint-disable-next-line react/no-unstable-nested-components -- FormFooter component with closure over local state
       FormFooter={() => (
         <EmailOTPFooter
           emailSent={emailSent}

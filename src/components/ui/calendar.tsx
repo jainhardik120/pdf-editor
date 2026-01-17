@@ -110,9 +110,11 @@ const Calendar = ({
         ...classNames,
       }}
       components={{
+        // eslint-disable-next-line react/no-unstable-nested-components, react/prop-types -- Required by react-day-picker API
         Root: ({ className, rootRef, ...props }) => {
           return <div ref={rootRef} className={cn(className)} data-slot="calendar" {...props} />;
         },
+        // eslint-disable-next-line react/no-unstable-nested-components, react/prop-types -- Required by react-day-picker API
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === 'left') {
             return <ChevronLeftIcon className={cn('size-4', className)} {...props} />;
@@ -125,6 +127,7 @@ const Calendar = ({
           return <ChevronDownIcon className={cn('size-4', className)} {...props} />;
         },
         DayButton: CalendarDayButton,
+        // eslint-disable-next-line react/no-unstable-nested-components -- Required by react-day-picker API
         WeekNumber: ({ children, ...props }) => {
           return (
             <td {...props}>
