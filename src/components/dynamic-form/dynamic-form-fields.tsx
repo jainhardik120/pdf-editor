@@ -265,6 +265,46 @@ const isS3File = (file: S3File | string): file is S3File => {
   return typeof file === 'object' && 'uploadProgress' in file;
 };
 
+const uploadSingleFile = (
+  file: File,
+  uploadUrl: string,
+  updateFileProgress: (
+    fileName: string,
+    progress: number,
+    status: 'idle' | 'uploading' | 'done' | 'failed',
+  ) => void,
+): Promise<void> => {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    updateFileProgress(file.name, 0, 'uploading');
+    const handleProgress = (event: ProgressEvent) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * PROGRESS_FULL);
+        updateFileProgress(file.name, percentComplete, 'uploading');
+      }
+    };
+    const handleLoad = () => {
+      if (xhr.status >= STATUS_CODE_200 && xhr.status < STATUS_CODE_300) {
+        updateFileProgress(file.name, PROGRESS_FULL, 'done');
+        resolve();
+      } else {
+        updateFileProgress(file.name, 0, 'failed');
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    };
+    const handleError = () => {
+      updateFileProgress(file.name, 0, 'failed');
+      reject(new Error('Upload failed'));
+    };
+    xhr.upload.addEventListener('progress', handleProgress);
+    xhr.addEventListener('load', handleLoad);
+    xhr.addEventListener('error', handleError);
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type);
+    xhr.send(file);
+  });
+};
+
 const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: FieldProps<T>) => {
   const [files, setFiles] = useState<S3File[]>([]);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -325,45 +365,6 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
   const signedUrlMutationCallback = useEffectEvent(signedUrlMutation.mutateAsync);
 
   useEffect(() => {
-    const uploadSingleFile = (file: File, uploadUrl: string): Promise<void> => {
-      return new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        updateFileProgress(file.name, 0, 'uploading');
-
-        // eslint-disable-next-line sonarjs/no-nested-functions -- Event handler needs closure access
-        const handleProgress = (event: ProgressEvent) => {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * PROGRESS_FULL);
-            updateFileProgress(file.name, percentComplete, 'uploading');
-          }
-        };
-
-        // eslint-disable-next-line sonarjs/no-nested-functions -- Event handler needs closure access
-        const handleLoad = () => {
-          if (xhr.status >= STATUS_CODE_200 && xhr.status < STATUS_CODE_300) {
-            updateFileProgress(file.name, PROGRESS_FULL, 'done');
-            resolve();
-          } else {
-            updateFileProgress(file.name, 0, 'failed');
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        };
-
-        // eslint-disable-next-line sonarjs/no-nested-functions -- Event handler needs closure access
-        const handleError = () => {
-          updateFileProgress(file.name, 0, 'failed');
-          reject(new Error('Upload failed'));
-        };
-
-        xhr.upload.addEventListener('progress', handleProgress);
-        xhr.addEventListener('load', handleLoad);
-        xhr.addEventListener('error', handleError);
-        xhr.open('PUT', uploadUrl);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
-      });
-    };
     const uploadAllFiles = async () => {
       const filesToUpload = files.filter((file) => file.uploadStatus === 'idle');
       if (filesToUpload.length > 0) {
@@ -380,6 +381,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
           }
           // eslint-disable-next-line sonarjs/no-nested-functions -- Needs closure access to update file state
           setFiles((prevFiles) =>
+            // eslint-disable-next-line max-nested-callbacks
             prevFiles.map((prevFile) =>
               prevFile.name === file.name
                 ? Object.assign(prevFile, {
@@ -390,7 +392,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
                 : prevFile,
             ),
           );
-          return uploadSingleFile(file, uploadData.uploadUrl);
+          return uploadSingleFile(file, uploadData.uploadUrl, updateFileProgress);
         });
         await Promise.all(uploadPromises);
       }
