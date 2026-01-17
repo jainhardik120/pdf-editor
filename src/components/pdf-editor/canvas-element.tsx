@@ -155,7 +155,8 @@ interface ImageElementProps {
 const ImageElement = ({ element, resolvePlaceholder }: ImageElementProps) => {
   const src = element.props.src !== undefined ? resolvePlaceholder(element.props.src) : '';
   const alt = element.props.alt !== undefined ? resolvePlaceholder(element.props.alt) : 'Image';
-  const hasValidSrc = src !== '' && !src.startsWith('{{');
+  const containsUnresolvedPlaceholder = /\{\{[^{}]+\}\}/.test(src);
+  const hasValidSrc = src !== '' && !containsUnresolvedPlaceholder;
   const [hasError, setHasError] = useState(false);
 
   const getPlaceholderText = (): string => {
