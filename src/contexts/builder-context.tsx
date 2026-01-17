@@ -178,6 +178,8 @@ export interface DocumentSettings {
   };
 }
 
+export type PlaceholderValues = Record<string, string>;
+
 const DEFAULT_DOCUMENT_SETTINGS: DocumentSettings = {
   header: [],
   footer: [],
@@ -197,6 +199,7 @@ interface BuilderContextType {
   selectedId: string | null;
   documentSettings: DocumentSettings;
   elements: BuilderElement[];
+  placeholderValues: PlaceholderValues;
   setElements: (elements: BuilderElement[]) => void;
   addElement: (element: BuilderElement, parentId?: string) => void;
   removeElement: (id: string) => void;
@@ -219,6 +222,9 @@ interface BuilderContextType {
   addFooterElement: (element: BuilderElement) => void;
   removeHeaderElement: (id: string) => void;
   removeFooterElement: (id: string) => void;
+  setPlaceholderValues: (values: PlaceholderValues) => void;
+  getPlaceholders: () => string[];
+  resolvePlaceholder: (text: string) => string;
 }
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -408,6 +414,52 @@ const getTargetPageId = (
 ): string | undefined => {
   return currentPageId ?? pages[0]?.id;
 };
+
+const PLACEHOLDER_REGEX = /\{\{([^{}]+)\}\}/g;
+
+const extractPlaceholdersFromElement = (element: BuilderElement): string[] => {
+  const placeholders: string[] = [];
+  const { props } = element;
+
+  const extractFromString = (str: string | undefined): void => {
+    if (str === undefined) {
+      return;
+    }
+    const matches = str.matchAll(PLACEHOLDER_REGEX);
+    for (const match of matches) {
+      if (match[1] !== undefined && !placeholders.includes(match[1])) {
+        placeholders.push(match[1]);
+      }
+    }
+  };
+
+  extractFromString(props.text);
+  extractFromString(props.src);
+  extractFromString(props.alt);
+
+  if (Array.isArray(props.items)) {
+    for (const item of props.items) {
+      extractFromString(item);
+    }
+  }
+
+  if (Array.isArray(props.data)) {
+    for (const row of props.data) {
+      if (Array.isArray(row)) {
+        for (const cell of row) {
+          extractFromString(cell);
+        }
+      }
+    }
+  }
+
+  for (const child of element.children) {
+    placeholders.push(...extractPlaceholdersFromElement(child));
+  }
+
+  return placeholders;
+};
+
 // eslint-disable-next-line max-statements
 export const BuilderProvider = ({ children }: { children: React.ReactNode }) => {
   const initialPage = createDefaultPage(0);
@@ -416,6 +468,7 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [documentSettings, setDocumentSettings] =
     useState<DocumentSettings>(DEFAULT_DOCUMENT_SETTINGS);
+  const [placeholderValues, setPlaceholderValues] = useState<PlaceholderValues>({});
 
   const currentPage = useMemo(() => {
     if (pages.length === 0) {
@@ -551,14 +604,15 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
   );
 
   const exportJSON = useCallback(() => {
-    return JSON.stringify({ pages, documentSettings }, null, 2);
-  }, [pages, documentSettings]);
+    return JSON.stringify({ pages, documentSettings, placeholderValues }, null, 2);
+  }, [pages, documentSettings, placeholderValues]);
 
   const resetElements = useCallback(() => {
     setPages([createDefaultPage(0)]);
     setCurrentPageId(null);
     setSelectedId(null);
     setDocumentSettings(DEFAULT_DOCUMENT_SETTINGS);
+    setPlaceholderValues({});
   }, []);
 
   const addPage = useCallback(() => {
@@ -624,6 +678,34 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
     }));
   }, []);
 
+  const getPlaceholders = useCallback((): string[] => {
+    const allPlaceholders: string[] = [];
+
+    for (const page of pages) {
+      for (const element of page.elements) {
+        allPlaceholders.push(...extractPlaceholdersFromElement(element));
+      }
+    }
+
+    for (const element of documentSettings.header) {
+      allPlaceholders.push(...extractPlaceholdersFromElement(element));
+    }
+    for (const element of documentSettings.footer) {
+      allPlaceholders.push(...extractPlaceholdersFromElement(element));
+    }
+
+    return [...new Set(allPlaceholders)];
+  }, [pages, documentSettings.header, documentSettings.footer]);
+
+  const resolvePlaceholder = useCallback(
+    (text: string): string => {
+      return text.replace(PLACEHOLDER_REGEX, (match, key: string) => {
+        return placeholderValues[key] ?? match;
+      });
+    },
+    [placeholderValues],
+  );
+
   const contextValue = useMemo(
     () => ({
       pages,
@@ -631,6 +713,7 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
       selectedId,
       documentSettings,
       elements,
+      placeholderValues,
       setElements,
       addElement,
       removeElement,
@@ -653,6 +736,9 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
       addFooterElement,
       removeHeaderElement,
       removeFooterElement,
+      setPlaceholderValues,
+      getPlaceholders,
+      resolvePlaceholder,
     }),
     [
       pages,
@@ -660,6 +746,7 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
       selectedId,
       documentSettings,
       elements,
+      placeholderValues,
       setElements,
       addElement,
       removeElement,
@@ -682,6 +769,9 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
       addFooterElement,
       removeHeaderElement,
       removeFooterElement,
+      setPlaceholderValues,
+      getPlaceholders,
+      resolvePlaceholder,
     ],
   );
 

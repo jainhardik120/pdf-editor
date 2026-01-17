@@ -92,6 +92,7 @@ interface TextElementProps {
   element: BuilderElement;
   isEditing: boolean;
   editText: string;
+  displayText: string;
   onTextChange: (value: string) => void;
   onTextSave: () => void;
   onStartEdit: () => void;
@@ -101,6 +102,7 @@ const TextElement = ({
   element,
   isEditing,
   editText,
+  displayText,
   onTextChange,
   onTextSave,
   onStartEdit,
@@ -139,7 +141,7 @@ const TextElement = ({
         type="button"
         onClick={onStartEdit}
       >
-        {element.props.text ?? 'Click to edit'}
+        {displayText}
       </button>
     </div>
   );
@@ -147,26 +149,58 @@ const TextElement = ({
 
 interface ImageElementProps {
   element: BuilderElement;
+  resolvePlaceholder: (text: string) => string;
 }
 
-const ImageElement = ({ element }: ImageElementProps) => (
-  <div
-    className="border-border bg-muted flex items-center justify-center rounded border"
-    style={{
-      width: element.props.width ?? '200px',
-      height: element.props.height ?? '150px',
-      backgroundColor: element.props.backgroundColor ?? '#2a2a2a',
-    }}
-  >
-    <p className="text-muted-foreground text-xs">Image</p>
-  </div>
-);
+const ImageElement = ({ element, resolvePlaceholder }: ImageElementProps) => {
+  const src = element.props.src !== undefined ? resolvePlaceholder(element.props.src) : '';
+  const alt = element.props.alt !== undefined ? resolvePlaceholder(element.props.alt) : 'Image';
+  const hasValidSrc = src !== '' && !src.startsWith('{{');
+  const [hasError, setHasError] = useState(false);
+
+  const getPlaceholderText = (): string => {
+    if (hasError) {
+      return 'Image failed to load';
+    }
+    if (src !== '') {
+      return src;
+    }
+    return 'Set image URL in properties';
+  };
+
+  return (
+    <div
+      className="border-border bg-muted flex items-center justify-center overflow-hidden rounded border"
+      style={{
+        width: element.props.width ?? '200px',
+        height: element.props.height ?? '150px',
+        backgroundColor: element.props.backgroundColor ?? '#2a2a2a',
+      }}
+    >
+      {hasValidSrc && !hasError ? (
+        /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt={alt}
+          className="h-full w-full object-cover"
+          src={src}
+          onError={() => {
+            setHasError(true);
+          }}
+        />
+      ) : (
+        <p className="text-muted-foreground text-xs">{getPlaceholderText()}</p>
+      )}
+    </div>
+  );
+};
 
 interface ButtonElementProps {
   element: BuilderElement;
+  displayText: string;
 }
 
-const ButtonElement = ({ element }: ButtonElementProps) => (
+const ButtonElement = ({ element, displayText }: ButtonElementProps) => (
   <div
     className="rounded px-6 py-2 text-center font-bold"
     style={{
@@ -176,7 +210,7 @@ const ButtonElement = ({ element }: ButtonElementProps) => (
       margin: element.props.margin ?? '0',
     }}
   >
-    {element.props.text ?? 'Button'}
+    {displayText}
   </div>
 );
 
@@ -209,9 +243,11 @@ const DividerElement = ({ element }: DividerElementProps) => (
 
 interface TableElementProps {
   element: BuilderElement;
+  resolvePlaceholder: (text: string) => string;
 }
 
-const TableElement = ({ element }: TableElementProps) => {
+/* eslint-disable react/no-array-index-key */
+const TableElement = ({ element, resolvePlaceholder }: TableElementProps) => {
   const data = (element.props.data as string[][] | undefined) ?? [
     ['Header 1', 'Header 2', 'Header 3'],
     ['Cell 1', 'Cell 2', 'Cell 3'],
@@ -225,9 +261,9 @@ const TableElement = ({ element }: TableElementProps) => {
       <thead>
         {data.length > 0 ? (
           <tr>
-            {data[0].map((cell) => (
+            {data[0].map((cell, idx) => (
               <th
-                key={`header-${cell}`}
+                key={`header-${element.id}-${idx}`}
                 className="border text-left text-sm font-semibold"
                 style={{
                   padding: cellPadding,
@@ -235,25 +271,25 @@ const TableElement = ({ element }: TableElementProps) => {
                   backgroundColor: headerBackground,
                 }}
               >
-                {cell}
+                {resolvePlaceholder(cell)}
               </th>
             ))}
           </tr>
         ) : null}
       </thead>
       <tbody>
-        {data.slice(1).map((row) => (
-          <tr key={`row-${row.join('-')}`}>
-            {row.map((cell) => (
+        {data.slice(1).map((row, rowIdx) => (
+          <tr key={`row-${element.id}-${rowIdx}`}>
+            {row.map((cell, cellIdx) => (
               <td
-                key={`cell-${cell}`}
+                key={`cell-${element.id}-${rowIdx}-${cellIdx}`}
                 className="border text-sm"
                 style={{
                   padding: cellPadding,
                   borderColor,
                 }}
               >
-                {cell}
+                {resolvePlaceholder(cell)}
               </td>
             ))}
           </tr>
@@ -262,12 +298,15 @@ const TableElement = ({ element }: TableElementProps) => {
     </table>
   );
 };
+/* eslint-enable react/no-array-index-key */
 
 interface ListElementProps {
   element: BuilderElement;
+  resolvePlaceholder: (text: string) => string;
 }
 
-const ListElement = ({ element }: ListElementProps) => {
+/* eslint-disable react/no-array-index-key */
+const ListElement = ({ element, resolvePlaceholder }: ListElementProps) => {
   const items = (element.props.items as string[] | undefined) ?? ['Item 1', 'Item 2', 'Item 3'];
   const isOrdered = element.props.listType === 'ordered';
   const ListTag = isOrdered ? 'ol' : 'ul';
@@ -282,14 +321,15 @@ const ListElement = ({ element }: ListElementProps) => {
         margin: '0',
       }}
     >
-      {items.map((item) => (
-        <li key={`item-${item}`} className="py-0.5">
-          {item}
+      {items.map((item, idx) => (
+        <li key={`item-${element.id}-${idx}`} className="py-0.5">
+          {resolvePlaceholder(item)}
         </li>
       ))}
     </ListTag>
   );
 };
+/* eslint-enable react/no-array-index-key */
 
 interface ElementActionsProps {
   element: BuilderElement;
@@ -385,6 +425,7 @@ export const CanvasElement = ({
     moveElement,
     moveElementToContainer,
     selectedId,
+    resolvePlaceholder,
   } = useBuilder();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -393,6 +434,8 @@ export const CanvasElement = ({
 
   const cannotMove = isAncestorLocked(element.id) || element.locked === true;
   const isContainer = element.type === 'row' || element.type === 'column';
+
+  const displayText = resolvePlaceholder(element.props.text ?? 'Click to edit');
 
   const handleClick = useCallback(
     (e: MouseEvent) => {
@@ -546,6 +589,7 @@ export const CanvasElement = ({
       case 'text':
         return (
           <TextElement
+            displayText={displayText}
             editText={editText}
             element={element}
             isEditing={isEditing}
@@ -557,17 +601,17 @@ export const CanvasElement = ({
           />
         );
       case 'image':
-        return <ImageElement element={element} />;
+        return <ImageElement element={element} resolvePlaceholder={resolvePlaceholder} />;
       case 'button':
-        return <ButtonElement element={element} />;
+        return <ButtonElement displayText={displayText} element={element} />;
       case 'spacer':
         return <SpacerElement element={element} />;
       case 'divider':
         return <DividerElement element={element} />;
       case 'table':
-        return <TableElement element={element} />;
+        return <TableElement element={element} resolvePlaceholder={resolvePlaceholder} />;
       case 'list':
-        return <ListElement element={element} />;
+        return <ListElement element={element} resolvePlaceholder={resolvePlaceholder} />;
       default:
         return <div>Unknown element type</div>;
     }

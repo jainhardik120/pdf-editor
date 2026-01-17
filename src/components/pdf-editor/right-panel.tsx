@@ -1,6 +1,8 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
+
+import Papa from 'papaparse';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   useBuilder,
   JUSTIFY_CONTENT_OPTIONS,
@@ -37,13 +40,18 @@ type PropertyKey =
   | 'cellPadding'
   | 'headerBackground'
   | 'style'
-  | 'listType';
+  | 'listType'
+  | 'src'
+  | 'alt'
+  | 'items'
+  | 'data';
 
 interface PropertyConfig {
   key: PropertyKey;
   label: string;
-  type: 'text' | 'color' | 'select';
+  type: 'text' | 'color' | 'select' | 'textarea' | 'csv' | 'list';
   options?: readonly string[];
+  placeholder?: string;
 }
 
 const BACKGROUND_COLOR_LABEL = 'Background Color';
@@ -75,17 +83,34 @@ const getPropertiesForType = (elementType: string): PropertyConfig[] => {
       { key: 'backgroundColor', label: BACKGROUND_COLOR_LABEL, type: 'color' },
     ],
     text: [
-      { key: 'text', label: 'Text', type: 'text' },
+      {
+        key: 'text',
+        label: 'Text',
+        type: 'textarea',
+        placeholder: 'Enter text. Use {{name}} for placeholders',
+      },
       { key: 'fontSize', label: 'Font Size', type: 'text' },
       { key: 'color', label: 'Color', type: 'color' },
     ],
     image: [
+      {
+        key: 'src',
+        label: 'Image URL',
+        type: 'text',
+        placeholder: 'https://example.com/image.png or {{imageUrl}}',
+      },
+      { key: 'alt', label: 'Alt Text', type: 'text', placeholder: 'Image description' },
       { key: 'width', label: 'Width', type: 'text' },
       { key: 'height', label: 'Height', type: 'text' },
       { key: 'backgroundColor', label: BACKGROUND_COLOR_LABEL, type: 'color' },
     ],
     button: [
-      { key: 'text', label: 'Text', type: 'text' },
+      {
+        key: 'text',
+        label: 'Text',
+        type: 'text',
+        placeholder: 'Button text. Use {{name}} for placeholders',
+      },
       { key: 'backgroundColor', label: BACKGROUND_COLOR_LABEL, type: 'color' },
       { key: 'padding', label: 'Padding', type: 'text' },
       { key: 'color', label: 'Text Color', type: 'color' },
@@ -98,11 +123,23 @@ const getPropertiesForType = (elementType: string): PropertyConfig[] => {
       { key: 'style', label: 'Style', type: 'select', options: DIVIDER_STYLE_OPTIONS },
     ],
     table: [
+      {
+        key: 'data',
+        label: 'Table Data (CSV)',
+        type: 'csv',
+        placeholder: 'Header 1,Header 2,Header 3\nCell 1,Cell 2,Cell 3',
+      },
       { key: 'borderColor', label: 'Border Color', type: 'color' },
       { key: 'cellPadding', label: 'Cell Padding', type: 'text' },
       { key: 'headerBackground', label: 'Header Background', type: 'color' },
     ],
     list: [
+      {
+        key: 'items',
+        label: 'List Items',
+        type: 'list',
+        placeholder: 'Item 1\nItem 2\nItem 3',
+      },
       { key: 'listType', label: 'List Type', type: 'select', options: LIST_TYPE_OPTIONS },
       { key: 'fontSize', label: 'Font Size', type: 'text' },
       { key: 'color', label: 'Color', type: 'color' },
@@ -124,15 +161,22 @@ interface TextPropertyFieldProps {
   propertyKey: PropertyKey;
   label: string;
   value: string;
+  placeholder?: string;
   onChange: (key: PropertyKey, value: string) => void;
 }
 
-const TextPropertyField = ({ propertyKey, label, value, onChange }: TextPropertyFieldProps) => (
+const TextPropertyField = ({
+  propertyKey,
+  label,
+  value,
+  placeholder,
+  onChange,
+}: TextPropertyFieldProps) => (
   <div className="space-y-1.5">
     <Label className="text-xs font-medium">{label}</Label>
     <Input
       className="h-8 text-xs"
-      placeholder={label}
+      placeholder={placeholder ?? label}
       type="text"
       value={value}
       onChange={(e) => {
@@ -141,6 +185,136 @@ const TextPropertyField = ({ propertyKey, label, value, onChange }: TextProperty
     />
   </div>
 );
+
+interface TextareaPropertyFieldProps {
+  propertyKey: PropertyKey;
+  label: string;
+  value: string;
+  placeholder?: string;
+  onChange: (key: PropertyKey, value: string) => void;
+}
+
+const TextareaPropertyField = ({
+  propertyKey,
+  label,
+  value,
+  placeholder,
+  onChange,
+}: TextareaPropertyFieldProps) => (
+  <div className="space-y-1.5">
+    <Label className="text-xs font-medium">{label}</Label>
+    <Textarea
+      className="min-h-[60px] text-xs"
+      placeholder={placeholder ?? label}
+      value={value}
+      onChange={(e) => {
+        onChange(propertyKey, e.target.value);
+      }}
+    />
+  </div>
+);
+
+interface CsvPropertyFieldProps {
+  propertyKey: PropertyKey;
+  label: string;
+  value: string[][];
+  placeholder?: string;
+  onChange: (key: PropertyKey, value: string[][]) => void;
+}
+
+const CsvPropertyField = ({
+  propertyKey,
+  label,
+  value,
+  placeholder,
+  onChange,
+}: CsvPropertyFieldProps) => {
+  const csvString = useMemo(() => {
+    if (!Array.isArray(value) || value.length === 0) {
+      return '';
+    }
+    return value.map((row) => row.join(',')).join('\n');
+  }, [value]);
+
+  const [localCsv, setLocalCsv] = useState(csvString);
+
+  const handleCsvChange = useCallback(
+    (text: string) => {
+      setLocalCsv(text);
+      const result = Papa.parse<string[]>(text, {
+        skipEmptyLines: true,
+      });
+      if (result.data.length > 0) {
+        onChange(propertyKey, result.data);
+      }
+    },
+    [propertyKey, onChange],
+  );
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium">{label}</Label>
+      <Textarea
+        className="min-h-[80px] font-mono text-xs"
+        placeholder={placeholder ?? 'Header1,Header2\nCell1,Cell2'}
+        value={localCsv}
+        onChange={(e) => {
+          handleCsvChange(e.target.value);
+        }}
+      />
+      <p className="text-muted-foreground text-xs">Enter comma-separated values</p>
+    </div>
+  );
+};
+
+interface ListPropertyFieldProps {
+  propertyKey: PropertyKey;
+  label: string;
+  value: string[];
+  placeholder?: string;
+  onChange: (key: PropertyKey, value: string[]) => void;
+}
+
+const ListPropertyField = ({
+  propertyKey,
+  label,
+  value,
+  placeholder,
+  onChange,
+}: ListPropertyFieldProps) => {
+  const listString = useMemo(() => {
+    if (!Array.isArray(value)) {
+      return '';
+    }
+    return value.join('\n');
+  }, [value]);
+
+  const [localList, setLocalList] = useState(listString);
+
+  const handleListChange = useCallback(
+    (text: string) => {
+      setLocalList(text);
+      const items = text.split('\n').filter((item) => item.trim() !== '');
+      onChange(propertyKey, items);
+    },
+    [propertyKey, onChange],
+  );
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium">{label}</Label>
+      <Textarea
+        className="min-h-[60px] text-xs"
+        placeholder={placeholder ?? 'Item 1\nItem 2\nItem 3'}
+        value={localList}
+        onChange={(e) => {
+          handleListChange(e.target.value);
+        }}
+      />
+      <p className="text-muted-foreground text-xs">One item per line</p>
+    </div>
+  );
+};
 
 interface ColorPropertyFieldProps {
   propertyKey: PropertyKey;
@@ -262,7 +436,7 @@ export const RightPanel = () => {
   const element = getSelectedElement();
 
   const handlePropertyChange = useCallback(
-    (key: PropertyKey, value: string) => {
+    (key: PropertyKey, value: string | string[] | string[][]) => {
       if (selectedId === null || element === null) {
         return;
       }
@@ -302,9 +476,8 @@ export const RightPanel = () => {
       <ScrollArea className="flex-1">
         <div className="space-y-4 p-3">
           {properties.map((property) => {
-            const value = (element.props[property.key] as string | undefined) ?? '';
-
             if (property.type === 'color') {
+              const value = (element.props[property.key] as string | undefined) ?? '';
               return (
                 <ColorPropertyField
                   key={property.key}
@@ -317,6 +490,7 @@ export const RightPanel = () => {
             }
 
             if (property.type === 'select' && property.options !== undefined) {
+              const value = (element.props[property.key] as string | undefined) ?? '';
               return (
                 <SelectPropertyField
                   key={property.key}
@@ -329,10 +503,54 @@ export const RightPanel = () => {
               );
             }
 
+            if (property.type === 'textarea') {
+              const value = (element.props[property.key] as string | undefined) ?? '';
+              return (
+                <TextareaPropertyField
+                  key={property.key}
+                  label={property.label}
+                  placeholder={property.placeholder}
+                  propertyKey={property.key}
+                  value={value}
+                  onChange={handlePropertyChange}
+                />
+              );
+            }
+
+            if (property.type === 'csv') {
+              const value = (element.props[property.key] as string[][] | undefined) ?? [];
+              return (
+                <CsvPropertyField
+                  key={property.key}
+                  label={property.label}
+                  placeholder={property.placeholder}
+                  propertyKey={property.key}
+                  value={value}
+                  onChange={handlePropertyChange}
+                />
+              );
+            }
+
+            if (property.type === 'list') {
+              const value = (element.props[property.key] as string[] | undefined) ?? [];
+              return (
+                <ListPropertyField
+                  key={property.key}
+                  label={property.label}
+                  placeholder={property.placeholder}
+                  propertyKey={property.key}
+                  value={value}
+                  onChange={handlePropertyChange}
+                />
+              );
+            }
+
+            const value = (element.props[property.key] as string | undefined) ?? '';
             return (
               <TextPropertyField
                 key={property.key}
                 label={property.label}
+                placeholder={property.placeholder}
                 propertyKey={property.key}
                 value={value}
                 onChange={handlePropertyChange}

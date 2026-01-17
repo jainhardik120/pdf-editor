@@ -10,6 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { CanvasArea } from '@/components/pdf-editor/canvas-area';
 import { LeftPanel } from '@/components/pdf-editor/left-panel';
+import { PreviewDialog } from '@/components/pdf-editor/preview-dialog';
 import { RightPanel } from '@/components/pdf-editor/right-panel';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +18,7 @@ import {
   useBuilder,
   type BuilderElement,
   type DocumentSettings,
+  type PlaceholderValues,
 } from '@/contexts/builder-context';
 import { useTRPCMutation, useTRPCQuery } from '@/server/react';
 
@@ -30,10 +32,18 @@ type PdfEditorClientProps = {
 type PdfData = {
   pages?: Array<{ elements?: BuilderElement[] }>;
   documentSettings?: Partial<DocumentSettings>;
+  placeholderValues?: PlaceholderValues;
 };
 
 const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) => {
-  const { pages, documentSettings, setElements, updateDocumentSettings } = useBuilder();
+  const {
+    pages,
+    documentSettings,
+    placeholderValues,
+    setElements,
+    updateDocumentSettings,
+    setPlaceholderValues,
+  } = useBuilder();
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -76,12 +86,15 @@ const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) 
       if (data.documentSettings !== undefined) {
         updateDocumentSettings(data.documentSettings);
       }
+      if (data.placeholderValues !== undefined) {
+        setPlaceholderValues(data.placeholderValues);
+      }
     } catch {
       // File doesn't exist yet, start with empty state
     } finally {
       setIsInitialized(true);
     }
-  }, [downloadUrlData?.downloadUrl, setElements, updateDocumentSettings]);
+  }, [downloadUrlData?.downloadUrl, setElements, updateDocumentSettings, setPlaceholderValues]);
 
   useEffect(() => {
     if (!isLoadingUrl && !isInitialized) {
@@ -94,7 +107,7 @@ const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) 
     try {
       const { uploadUrl } = await uploadUrlMutation.mutateAsync({ id: pdfId });
 
-      const pdfData = JSON.stringify({ pages, documentSettings });
+      const pdfData = JSON.stringify({ pages, documentSettings, placeholderValues });
 
       const response = await fetch(uploadUrl, {
         method: 'PUT',
@@ -115,7 +128,7 @@ const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) 
     } finally {
       setIsSaving(false);
     }
-  }, [pdfId, pages, documentSettings, uploadUrlMutation]);
+  }, [pdfId, pages, documentSettings, placeholderValues, uploadUrlMutation]);
 
   const debouncedSave = useDebouncedCallback(() => {
     void savePdfData();
@@ -125,7 +138,7 @@ const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) 
     if (isInitialized) {
       debouncedSave();
     }
-  }, [pages, documentSettings, isInitialized, debouncedSave]);
+  }, [pages, documentSettings, placeholderValues, isInitialized, debouncedSave]);
 
   if (!isInitialized) {
     return (
@@ -147,6 +160,7 @@ const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) 
           </Button>
         </div>
         <div className="flex items-center gap-4">
+          <PreviewDialog />
           {lastSaved !== null && (
             <span className="text-muted-foreground text-sm">
               Last saved: {lastSaved.toLocaleTimeString()}
