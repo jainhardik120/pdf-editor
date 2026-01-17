@@ -744,7 +744,7 @@ const HeaderFooterPanel = () => {
 
   const handleAddHeaderText = useCallback(() => {
     const element: BuilderElement = {
-      id: `header-text-${Date.now()}`,
+      id: `header-text-${crypto.randomUUID()}`,
       type: 'text',
       children: [],
       props: { text: 'Header text', fontSize: '12px', color: 'inherit' },
@@ -754,7 +754,7 @@ const HeaderFooterPanel = () => {
 
   const handleAddHeaderImage = useCallback(() => {
     const element: BuilderElement = {
-      id: `header-image-${Date.now()}`,
+      id: `header-image-${crypto.randomUUID()}`,
       type: 'image',
       children: [],
       props: { width: '100px', height: '40px', backgroundColor: '#2a2a2a' },
@@ -764,7 +764,7 @@ const HeaderFooterPanel = () => {
 
   const handleAddFooterText = useCallback(() => {
     const element: BuilderElement = {
-      id: `footer-text-${Date.now()}`,
+      id: `footer-text-${crypto.randomUUID()}`,
       type: 'text',
       children: [],
       props: { text: 'Footer text', fontSize: '10px', color: '#666666' },
@@ -774,7 +774,7 @@ const HeaderFooterPanel = () => {
 
   const handleAddFooterImage = useCallback(() => {
     const element: BuilderElement = {
-      id: `footer-image-${Date.now()}`,
+      id: `footer-image-${crypto.randomUUID()}`,
       type: 'image',
       children: [],
       props: { width: '80px', height: '30px', backgroundColor: '#2a2a2a' },

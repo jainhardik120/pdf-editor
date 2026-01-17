@@ -570,13 +570,13 @@ export const BuilderProvider = ({ children }: { children: React.ReactNode }) => 
           return prev;
         }
 
-        const elementToMove = findElementInTree(currentPageData.elements, elementId);
-        if (elementToMove === null) {
+        const isAlreadyAtRoot = currentPageData.elements.some((el) => el.id === elementId);
+        if (isAlreadyAtRoot) {
           return prev;
         }
 
-        const isAlreadyAtRoot = currentPageData.elements.some((el) => el.id === elementId);
-        if (isAlreadyAtRoot) {
+        const elementToMove = findElementInTree(currentPageData.elements, elementId);
+        if (elementToMove === null) {
           return prev;
         }
 
