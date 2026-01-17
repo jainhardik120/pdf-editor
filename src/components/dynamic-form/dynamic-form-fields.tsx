@@ -476,9 +476,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
   );
 };
 
-export const RenderedFormFields: {
-  [key: string]: <T extends FieldValues>(props: FieldProps<T>) => ReactNode;
-} = {
+export const RenderedFormFields = {
   input: (props) => <Input placeholder={props.formField.placeholder} {...props.field} />,
   number: (props) => (
     <Input
@@ -509,7 +507,7 @@ export const RenderedFormFields: {
   custom: RenderedCustomInput,
   stringArray: RenderedStringArrayInput,
   file: RenderedFileUploadInput,
-};
+} as const satisfies Record<string, <T extends FieldValues>(props: FieldProps<T>) => ReactNode>;
 
 export const RenderFormInput = <T extends FieldValues = FieldValues>({
   type,

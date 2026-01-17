@@ -5,9 +5,13 @@ import { twoFactor } from 'better-auth/plugins';
 
 import { db } from '@/db';
 import * as schema from '@/db/auth-schema';
-// import ResetPasswordEmail from '@/emails/reset-password';
+import ResetPasswordEmail from '@/emails/reset-password';
 import { env } from '@/lib/env';
-// import { sendSESEmail } from '@/lib/send-email';
+
+import { sendSESEmail } from './send-email';
+
+const SESSION_CACHE_MAX_AGE_MINUTES = 5;
+const SECONDS_PER_MINUTE = 60;
 
 export const auth = betterAuth({
   appName: 'pdf-editor',
@@ -18,11 +22,11 @@ export const auth = betterAuth({
     twoFactor({
       otpOptions: {
         sendOTP: async ({ user, otp }) => {
-          // await sendSESEmail(
-          //   [user.email],
-          //   'Enter OTP',
-          //   ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: otp }),
-          // );
+          await sendSESEmail(
+            [user.email],
+            'Enter OTP',
+            ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: otp }),
+          );
         },
       },
     }),
@@ -34,7 +38,7 @@ export const auth = betterAuth({
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60,
+      maxAge: SESSION_CACHE_MAX_AGE_MINUTES * SECONDS_PER_MINUTE,
     },
   },
   emailVerification: {
@@ -42,23 +46,22 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      // await sendSESEmail(
-      //   [user.email],
-      //   'Verify your email',
-      //   ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: url }),
-      // );
-      // console.log(url);
+      await sendSESEmail(
+        [user.email],
+        'Verify your email',
+        ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: url }),
+      );
     },
   },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
-      // await sendSESEmail(
-      //   [user.email],
-      //   'Reset your password',
-      //   ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: url }),
-      // );
+      await sendSESEmail(
+        [user.email],
+        'Reset your password',
+        ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: url }),
+      );
     },
   },
   trustedOrigins:

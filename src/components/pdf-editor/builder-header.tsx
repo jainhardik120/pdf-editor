@@ -58,7 +58,6 @@ export const CanvasHeader: React.FC = () => {
           </pre>
           <div className="flex gap-2">
             <Button
-              className="bg-accent hover:bg-accent/90"
               size="sm"
               onClick={() => {
                 void navigator.clipboard.writeText(jsonContent);
