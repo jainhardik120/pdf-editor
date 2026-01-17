@@ -48,7 +48,7 @@ const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
 const useSidebar = () => {
   const context = React.useContext(SidebarContext);
-  if (!context) {
+  if (context === null) {
     throw new Error('useSidebar must be used within a SidebarProvider.');
   }
 
@@ -78,7 +78,7 @@ const SidebarProvider = ({
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === 'function' ? value(open) : value;
-      if (setOpenProp) {
+      if (setOpenProp !== undefined) {
         setOpenProp(openState);
       } else {
         _setOpen(openState);
@@ -92,7 +92,11 @@ const SidebarProvider = ({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
+    if (isMobile) {
+      setOpenMobile((open) => !open);
+    } else {
+      setOpen((open) => !open);
+    }
   }, [isMobile, setOpen, setOpenMobile]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
@@ -483,7 +487,7 @@ const SidebarMenuButton = ({
     />
   );
 
-  if (!tooltip) {
+  if (typeof tooltip === 'string' || tooltip === undefined) {
     return button;
   }
 

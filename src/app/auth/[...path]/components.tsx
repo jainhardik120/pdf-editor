@@ -159,7 +159,7 @@ export const LoginForm = () => {
         return;
       }
       const conditionalMediaAvailable = await PublicKeyCredential.isConditionalMediationAvailable();
-      if (conditionalMediaAvailable) {
+      if (conditionalMediaAvailable === true) {
         setPasskeyAvailable(true);
         void signInUsingPasskey({ autoFill: true });
       }

@@ -168,11 +168,11 @@ const RenderedDatetimeInput = <T extends FieldValues = FieldValues>(props: Field
         type="time"
         value={timeValue}
         onChange={(e) => {
-          const [h, m, s] = e.target.value.split(':').map(Number);
+          const parts = e.target.value.split(':').map(Number);
           const time = new Date(fieldDate);
-          time.setHours(h ?? 0);
-          time.setMinutes(m ?? 0);
-          time.setSeconds(s ?? 0);
+          time.setHours(parts[0] ?? 0);
+          time.setMinutes(parts[1] ?? 0);
+          time.setSeconds(parts[2] ?? 0);
           props.field.onChange(time);
         }}
       />

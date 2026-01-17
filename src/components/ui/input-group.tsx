@@ -52,7 +52,8 @@ const InputGroupAddon = ({
     data-slot="input-group-addon"
     role="group"
     onClick={(e) => {
-      if ((e.target as HTMLElement).closest('button')) {
+      const target = e.target as HTMLElement;
+      if (target.closest('button') !== null) {
         return;
       }
       e.currentTarget.parentElement?.querySelector('input')?.focus();

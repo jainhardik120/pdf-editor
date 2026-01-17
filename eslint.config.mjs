@@ -15,12 +15,11 @@ import sonarjs from 'eslint-plugin-sonarjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/* eslint-disable no-magic-numbers -- ESLint configuration constants */
+// ESLint configuration constants (magic numbers are acceptable here)
 const MAX_NESTED_CALLBACKS = 3;
 const MAX_STATEMENTS = 30;
 const SONARJS_COGNITIVE_COMPLEXITY = 15;
 const SONARJS_MAX_SWITCH_CASES = 10;
-/* eslint-enable no-magic-numbers */
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
