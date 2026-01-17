@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, type Ref, useEffect, useImperativeHandle, useRef } from 'react';
+import { type ReactNode, type Ref, useEffect, useId, useImperativeHandle, useRef } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormReturn, type FieldValues, type DefaultValues } from 'react-hook-form';
@@ -61,6 +61,7 @@ const DynamicForm = <T extends FieldValues>(props: Props<T, T>) => {
       });
     }
   }, [defaultValues, form]);
+  const formId = useId();
 
   return (
     <Form {...form}>
@@ -74,19 +75,26 @@ const DynamicForm = <T extends FieldValues>(props: Props<T, T>) => {
             control={form.control}
             name={field.name}
             render={({ field: formField }) => (
-              <FormItem className={cn(`${field.type === RenderLabelAfter ? 'flex flex-row' : ''}`)}>
+              <FormItem
+                className={cn(`${field.type === RenderLabelAfter ? 'flex flex-row' : 'min-w-0'}`)}
+              >
                 {field.type !== RenderLabelAfter &&
                   (typeof field.label === 'string' ? (
-                    <FormLabel>{field.label}</FormLabel>
+                    <FormLabel htmlFor={`${formId}-${field.name}`}>{field.label}</FormLabel>
                   ) : (
                     field.label
                   ))}
                 <FormControl>
-                  <RenderFormInput field={formField} formField={field} type={field.type} />
+                  <RenderFormInput
+                    field={formField}
+                    formField={field}
+                    id={`${formId}-${field.name}`}
+                    type={field.type}
+                  />
                 </FormControl>
                 {field.type === RenderLabelAfter &&
                   (typeof field.label === 'string' ? (
-                    <FormLabel>{field.label}</FormLabel>
+                    <FormLabel htmlFor={`${formId}-${field.name}`}>{field.label}</FormLabel>
                   ) : (
                     field.label
                   ))}

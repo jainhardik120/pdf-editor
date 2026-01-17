@@ -205,7 +205,7 @@ export const LoginForm = () => {
             <div className="flex items-center">
               <FormLabel>Password</FormLabel>
               <Link
-                className="ml-auto text-sm underline-offset-4 hover:underline"
+                className="ml-auto text-xs underline-offset-4 hover:underline"
                 href={`/auth/forgot-password?redirect=${searchParams.redirect}`}
               >
                 Forgot password?
