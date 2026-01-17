@@ -5,7 +5,10 @@ import { twoFactor } from 'better-auth/plugins';
 
 import { db } from '@/db';
 import * as schema from '@/db/auth-schema';
+import ResetPasswordEmail from '@/emails/reset-password';
 import { env } from '@/lib/env';
+
+import { sendSESEmail } from './send-email';
 
 const SESSION_CACHE_MAX_AGE_MINUTES = 5;
 const SECONDS_PER_MINUTE = 60;
@@ -18,8 +21,12 @@ export const auth = betterAuth({
     }),
     twoFactor({
       otpOptions: {
-        sendOTP: async ({ user: _user, otp: _otp }) => {
-          // OTP sending via email service not yet implemented
+        sendOTP: async ({ user, otp }) => {
+          await sendSESEmail(
+            [user.email],
+            'Enter OTP',
+            ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: otp }),
+          );
         },
       },
     }),
@@ -38,15 +45,23 @@ export const auth = betterAuth({
     sendOnSignIn: true,
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user: _user, url: _url }) => {
-      // Email verification sending via email service not yet implemented
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendSESEmail(
+        [user.email],
+        'Verify your email',
+        ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: url }),
+      );
     },
   },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    sendResetPassword: async ({ user: _user, url: _url }) => {
-      // Password reset email sending via email service not yet implemented
+    sendResetPassword: async ({ user, url }) => {
+      await sendSESEmail(
+        [user.email],
+        'Reset your password',
+        ResetPasswordEmail({ userFirstname: user.name, resetPasswordLink: url }),
+      );
     },
   },
   trustedOrigins:
