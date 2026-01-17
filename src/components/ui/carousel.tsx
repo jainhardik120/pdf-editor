@@ -61,6 +61,7 @@ const Carousel = ({
   const [canScrollNext, setCanScrollNext] = React.useState(false);
 
   const onSelect = React.useCallback((api: CarouselApi) => {
+    // eslint-disable-next-line security/detect-possible-timing-attacks -- Not a security concern
     if (api === undefined) {
       return;
     }
@@ -97,6 +98,7 @@ const Carousel = ({
   }, [api, setApi]);
 
   React.useEffect(() => {
+    // eslint-disable-next-line security/detect-possible-timing-attacks -- Not a security concern
     if (api === undefined) {
       return;
     }
@@ -105,6 +107,7 @@ const Carousel = ({
     api.on('select', onSelect);
 
     return () => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, sonarjs/different-types-comparison, security/detect-possible-timing-attacks -- api can be undefined
       if (api !== undefined) {
         api.off('select', onSelect);
       }
@@ -117,6 +120,7 @@ const Carousel = ({
         carouselRef,
         api: api,
         opts,
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- opts can be undefined
         orientation: orientation ?? (opts?.axis === 'y' ? 'vertical' : 'horizontal'),
         scrollPrev,
         scrollNext,

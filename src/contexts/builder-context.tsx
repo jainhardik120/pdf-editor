@@ -428,8 +428,9 @@ const extractPlaceholdersFromElement = (element: BuilderElement): string[] => {
     }
     const matches = str.matchAll(PLACEHOLDER_REGEX);
     for (const match of matches) {
-      if (match[1] !== undefined && placeholders.includes(match[1]) === false) {
-        placeholders.push(match[1]);
+      const placeholder = match[1];
+      if (placeholders.includes(placeholder) === false) {
+        placeholders.push(placeholder);
       }
     }
   };

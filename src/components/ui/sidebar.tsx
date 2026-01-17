@@ -1,4 +1,3 @@
-/* eslint-disable no-param-reassign */
 'use client';
 
 import * as React from 'react';
@@ -491,11 +490,7 @@ const SidebarMenuButton = ({
     return button;
   }
 
-  if (typeof tooltip === 'string') {
-    tooltip = {
-      children: tooltip,
-    };
-  }
+  const tooltipProps = typeof tooltip === 'string' ? { children: tooltip } : tooltip;
 
   return (
     <Tooltip>
@@ -504,7 +499,7 @@ const SidebarMenuButton = ({
         align="center"
         hidden={state !== 'collapsed' || isMobile}
         side="right"
-        {...tooltip}
+        {...tooltipProps}
       />
     </Tooltip>
   );
@@ -557,6 +552,7 @@ const SidebarMenuSkeleton = ({
 }) => {
   // Random width between 50 to 90%.
   const [width] = React.useState(() => {
+    // eslint-disable-next-line sonarjs/pseudo-random -- UI skeleton width, not security-sensitive
     return `${Math.floor(Math.random() * RANDOM_WIDTH_MIN) + RANDOM_WIDTH_MAX}%`;
   });
 

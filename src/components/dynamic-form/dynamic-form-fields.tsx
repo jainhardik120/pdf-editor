@@ -331,6 +331,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
 
         updateFileProgress(file.name, 0, 'uploading');
 
+        // eslint-disable-next-line sonarjs/no-nested-functions -- Event handler needs closure access
         const handleProgress = (event: ProgressEvent) => {
           if (event.lengthComputable) {
             const percentComplete = Math.round((event.loaded / event.total) * PROGRESS_FULL);
@@ -338,6 +339,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
           }
         };
 
+        // eslint-disable-next-line sonarjs/no-nested-functions -- Event handler needs closure access
         const handleLoad = () => {
           if (xhr.status >= STATUS_CODE_200 && xhr.status < STATUS_CODE_300) {
             updateFileProgress(file.name, PROGRESS_FULL, 'done');
@@ -348,6 +350,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
           }
         };
 
+        // eslint-disable-next-line sonarjs/no-nested-functions -- Event handler needs closure access
         const handleError = () => {
           updateFileProgress(file.name, 0, 'failed');
           reject(new Error('Upload failed'));
@@ -375,6 +378,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
             updateFileProgress(file.name, 0, 'failed');
             return Promise.resolve();
           }
+          // eslint-disable-next-line sonarjs/no-nested-functions -- Needs closure access to update file state
           setFiles((prevFiles) =>
             prevFiles.map((prevFile) =>
               prevFile.name === file.name

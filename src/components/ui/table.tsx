@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 const Table = ({ className, ...props }: React.ComponentProps<'table'>) => (
   <div className="relative w-full overflow-x-auto" data-slot="table-container">
+    {/* eslint-disable-next-line sonarjs/table-header -- Generic table component, users must add headers */}
     <table
       className={cn('w-full caption-bottom text-xs', className)}
       data-slot="table"

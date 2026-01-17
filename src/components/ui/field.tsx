@@ -132,12 +132,12 @@ const FieldSeparator = ({
       'relative -my-2 h-5 text-xs group-data-[variant=outline]/field-group:-mb-2',
       className,
     )}
-    data-content={!!children}
+    data-content={children !== null && children !== undefined}
     data-slot="field-separator"
     {...props}
   >
     <Separator className="absolute inset-0 top-1/2" />
-    {children ? (
+    {children !== null && children !== undefined ? (
       <span
         className="text-muted-foreground bg-background relative mx-auto block w-fit px-2"
         data-slot="field-separator-content"
@@ -156,29 +156,34 @@ const FieldError = ({
 }: React.ComponentProps<'div'> & {
   errors?: Array<{ message?: string } | undefined>;
 }) => {
-  const content = useMemo(() => {
-    if (children) {
+  // eslint-disable-next-line sonarjs/function-return-type -- React components can return different ReactNode types
+  const content = useMemo((): React.ReactNode => {
+    if (children !== null && children !== undefined) {
       return children;
     }
 
-    if (!errors?.length) {
+    if (errors === undefined || errors.length === 0) {
       return null;
     }
 
     const uniqueErrors = [...new Map(errors.map((error) => [error?.message, error])).values()];
 
-    if (uniqueErrors?.length === 1) {
+    if (uniqueErrors.length === 1) {
       return uniqueErrors[0]?.message;
     }
 
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
-        {uniqueErrors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}
+        {uniqueErrors.map(
+          (error, index) =>
+            error?.message !== undefined &&
+            error.message !== '' && <li key={index}>{error.message}</li>,
+        )}
       </ul>
     );
   }, [children, errors]);
 
-  if (!content) {
+  if (content === null || content === undefined) {
     return null;
   }
 
