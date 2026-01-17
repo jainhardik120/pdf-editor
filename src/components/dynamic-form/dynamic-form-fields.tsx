@@ -56,6 +56,7 @@ export type FormField<T extends FieldValues = FieldValues> = {
 type FieldProps<T extends FieldValues = FieldValues> = {
   field: ControllerRenderProps<T, Path<T>>;
   formField: FormField<T>;
+  id: string;
 };
 
 const RenderedStringArrayInput = <T extends FieldValues = FieldValues>(props: FieldProps<T>) => {
@@ -142,9 +143,21 @@ const RenderedTimeInput = <T extends FieldValues = FieldValues>(props: FieldProp
   <Input placeholder={props.formField.placeholder} type="time" {...props.field} />
 );
 
-const RenderedDateInput = <T extends FieldValues = FieldValues>(props: FieldProps<T>) => (
-  <Input placeholder={props.formField.placeholder} type="date" {...props.field} />
-);
+const RenderedDateInput = <T extends FieldValues = FieldValues>(props: FieldProps<T>) => {
+  const fieldDate = props.field.value as Date;
+  return (
+    <DateInput
+      date={fieldDate}
+      onChange={(date) => {
+        const updatedDate = new Date(fieldDate);
+        updatedDate.setDate(date.getDate());
+        updatedDate.setMonth(date.getMonth());
+        updatedDate.setFullYear(date.getFullYear());
+        props.field.onChange(updatedDate);
+      }}
+    />
+  );
+};
 
 const RenderedDatetimeInput = <T extends FieldValues = FieldValues>(props: FieldProps<T>) => {
   const fieldDate = props.field.value as Date;
@@ -170,9 +183,9 @@ const RenderedDatetimeInput = <T extends FieldValues = FieldValues>(props: Field
         onChange={(e) => {
           const [h, m, s] = e.target.value.split(':').map(Number);
           const time = new Date(fieldDate);
-          time.setHours(h ?? 0);
-          time.setMinutes(m ?? 0);
-          time.setSeconds(s ?? 0);
+          time.setHours(h);
+          time.setMinutes(m);
+          time.setSeconds(s);
           props.field.onChange(time);
         }}
       />
@@ -235,6 +248,7 @@ const RenderedColorInput = <T extends FieldValues = FieldValues>(props: FieldPro
 const RenderedCheckboxInput = <T extends FieldValues = FieldValues>(props: FieldProps<T>) => (
   <Checkbox
     checked={props.field.value as boolean}
+    id={props.id}
     onCheckedChange={(checked) => {
       props.field.onChange(checked);
     }}
@@ -484,17 +498,29 @@ export const RenderedFormFields = {
       step={props.formField.step}
       type="number"
       {...props.field}
+      id={props.id}
     />
   ),
-  textarea: (props) => <Textarea placeholder={props.formField.placeholder} {...props.field} />,
+  textarea: (props) => (
+    <Textarea placeholder={props.formField.placeholder} {...props.field} id={props.id} />
+  ),
   password: (props) => (
-    <Input placeholder={props.formField.placeholder} type="password" {...props.field} />
+    <Input
+      placeholder={props.formField.placeholder}
+      type="password"
+      {...props.field}
+      id={props.id}
+    />
   ),
   email: (props) => (
-    <Input placeholder={props.formField.placeholder} type="email" {...props.field} />
+    <Input placeholder={props.formField.placeholder} type="email" {...props.field} id={props.id} />
   ),
-  tel: (props) => <Input placeholder={props.formField.placeholder} type="tel" {...props.field} />,
-  url: (props) => <Input placeholder={props.formField.placeholder} type="url" {...props.field} />,
+  tel: (props) => (
+    <Input placeholder={props.formField.placeholder} type="tel" {...props.field} id={props.id} />
+  ),
+  url: (props) => (
+    <Input placeholder={props.formField.placeholder} type="url" {...props.field} id={props.id} />
+  ),
   date: RenderedDateInput,
   time: RenderedTimeInput,
   datetime: RenderedDatetimeInput,
@@ -511,13 +537,15 @@ export const RenderFormInput = <T extends FieldValues = FieldValues>({
   type,
   field,
   formField,
+  id,
 }: {
   type: keyof typeof RenderedFormFields;
   field: ControllerRenderProps<T, Path<T>>;
   formField: FormField<T>;
+  id: string;
 }) => {
   const RenderedInput = RenderedFormFields[type];
-  return <RenderedInput field={field} formField={formField} />;
+  return <RenderedInput field={field} formField={formField} id={id} />;
 };
 
 export const RenderLabelAfter: Partial<keyof typeof RenderedFormFields> = 'checkbox';
