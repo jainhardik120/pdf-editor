@@ -3,6 +3,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
+  useEffectEvent,
   useMemo,
   useState,
 } from 'react';
@@ -267,9 +268,6 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
     accept: props.formField.accept,
     maxFiles: props.formField.maxFiles,
   });
-  const signedUrlMutation = useTRPCMutation((trpc) =>
-    trpc.files.getSignedUrlForUploadingFiles.mutationOptions(),
-  );
 
   const removeFile = (file: S3File | string) => {
     if (isS3File(file)) {
@@ -284,30 +282,33 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
     }
   };
 
-  const updateFileProgress = (
-    fileName: string,
-    progress: number,
-    status: 'idle' | 'uploading' | 'done' | 'failed',
-  ) => {
-    setFiles((prevFiles) =>
-      prevFiles.map((file) =>
-        file.name === fileName
-          ? Object.assign(file, {
-              uploadStatus: status,
-              uploadProgress: progress,
-            })
-          : file,
-      ),
-    );
-    if (status === 'done') {
-      const propsValue = props.field.value as string[];
-      const file = files.find((file) => file.name === fileName);
-      if (file !== undefined) {
-        const updatedPropsValue = [...propsValue, file.key];
-        props.field.onChange(updatedPropsValue);
+  const updateFileProgress = useEffectEvent(
+    (fileName: string, progress: number, status: 'idle' | 'uploading' | 'done' | 'failed') => {
+      setFiles((prevFiles) =>
+        prevFiles.map((file) =>
+          file.name === fileName
+            ? Object.assign(file, {
+                uploadStatus: status,
+                uploadProgress: progress,
+              })
+            : file,
+        ),
+      );
+      if (status === 'done') {
+        const propsValue = props.field.value as string[];
+        const file = files.find((file) => file.name === fileName);
+        if (file !== undefined) {
+          const updatedPropsValue = [...propsValue, file.key];
+          props.field.onChange(updatedPropsValue);
+        }
       }
-    }
-  };
+    },
+  );
+
+  const signedUrlMutation = useTRPCMutation((trpc) =>
+    trpc.files.getSignedUrlForUploadingFiles.mutationOptions(),
+  );
+  const signedUrlMutationCallback = useEffectEvent(signedUrlMutation.mutateAsync);
 
   useEffect(() => {
     const uploadSingleFile = (file: File, uploadUrl: string): Promise<void> => {
@@ -349,7 +350,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
     const uploadAllFiles = async () => {
       const filesToUpload = files.filter((file) => file.uploadStatus === 'idle');
       if (filesToUpload.length > 0) {
-        const signedUrls = await signedUrlMutation.mutateAsync(
+        const signedUrls = await signedUrlMutationCallback(
           filesToUpload.map((file) => {
             return { filename: file.name, contentType: file.type };
           }),
@@ -376,10 +377,7 @@ const RenderedFileUploadInput = <T extends FieldValues = FieldValues>(props: Fie
         await Promise.all(uploadPromises);
       }
     };
-
     void uploadAllFiles();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files]);
 
   const previouslyUploadedFiles = useMemo(

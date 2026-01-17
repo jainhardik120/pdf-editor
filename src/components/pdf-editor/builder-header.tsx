@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { useBuilder } from '@/contexts/builder-context';
 
+import { PreviewDialog } from './preview-dialog';
+
 export const CanvasHeader: React.FC = () => {
   const { exportJSON, resetElements } = useBuilder();
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -32,6 +34,7 @@ export const CanvasHeader: React.FC = () => {
           <p className="text-muted-foreground mt-0.5 text-xs">Drop components here</p>
         </div>
         <div className="flex items-center gap-2">
+          <PreviewDialog />
           <Button
             size="sm"
             onClick={() => {

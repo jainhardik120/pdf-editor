@@ -1,18 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 
-import Link from 'next/link';
-
-import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { CanvasArea } from '@/components/pdf-editor/canvas-area';
 import { LeftPanel } from '@/components/pdf-editor/left-panel';
-import { PreviewDialog } from '@/components/pdf-editor/preview-dialog';
 import { RightPanel } from '@/components/pdf-editor/right-panel';
-import { Button } from '@/components/ui/button';
 import {
   BuilderProvider,
   useBuilder,
@@ -20,6 +15,7 @@ import {
   type DocumentSettings,
   type PlaceholderValues,
 } from '@/contexts/builder-context';
+import { type HeaderState, useHeaderTextStore } from '@/hooks/use-header-store';
 import { useTRPCMutation, useTRPCQuery } from '@/server/react';
 
 const DEBOUNCE_DELAY = 2000;
@@ -140,6 +136,26 @@ const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) 
     }
   }, [pages, documentSettings, placeholderValues, isInitialized, debouncedSave]);
 
+  const { setText, ...headerState } = useHeaderTextStore();
+
+  const setHeaderState = useEffectEvent((val: Partial<HeaderState>) => {
+    setText({ ...headerState, ...val });
+  });
+
+  useEffect(() => {
+    let secondaryText: string = '';
+    if (isSaving === true) {
+      secondaryText = 'Saving...';
+    } else if (lastSaved !== null) {
+      secondaryText = `Last saved: ${lastSaved.toLocaleTimeString()}`;
+    }
+    setHeaderState({
+      primaryText: pdfName,
+      backNavigation: '/pdf-editor',
+      secondaryText,
+    });
+  }, [pdfName, isSaving, lastSaved]);
+
   if (!isInitialized) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -150,25 +166,6 @@ const PdfEditorInner = ({ pdfId, pdfName }: { pdfId: string; pdfName: string }) 
 
   return (
     <div className="bg-background flex h-full w-full flex-1 flex-col">
-      <div className="flex items-center justify-between border-b px-4 py-2">
-        <div className="flex items-center gap-4">
-          <Button asChild size="sm" variant="ghost">
-            <Link href="/pdf-editor">
-              <ArrowLeft className="mr-2 size-4" />
-              {pdfName}
-            </Link>
-          </Button>
-        </div>
-        <div className="flex items-center gap-4">
-          <PreviewDialog />
-          {lastSaved !== null && (
-            <span className="text-muted-foreground text-sm">
-              Last saved: {lastSaved.toLocaleTimeString()}
-            </span>
-          )}
-          {isSaving === true && <span className="text-muted-foreground text-sm">Saving...</span>}
-        </div>
-      </div>
       <div className="flex flex-1 overflow-hidden">
         <LeftPanel />
         <CanvasArea />

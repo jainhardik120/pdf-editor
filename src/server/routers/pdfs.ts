@@ -108,8 +108,10 @@ export const pdfsRouter = createTRPCRouter({
       .from(pdf)
       .where(and(eq(pdf.id, input.id), eq(pdf.userId, userId)))
       .limit(1);
-
-    return result[0] ?? null;
+    if (result.length === 0) {
+      throw new TRPCError({ code: 'NOT_FOUND' });
+    }
+    return result[0];
   }),
 
   create: protectedProcedure

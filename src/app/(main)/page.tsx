@@ -6,6 +6,7 @@ import { ArrowRight, FileText, Layout, Layers, Zap, Check, BarChart3, Clock } fr
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SetHeader } from '@/hooks/use-header-store';
 
 const features = [
   {
@@ -47,6 +48,8 @@ const benefits = [
 export default function Home() {
   return (
     <div className="flex w-full flex-col">
+      <SetHeader backNavigation="" primarySubText="" primaryText="PDF Editor" secondaryText="" />
+
       {/* Hero Section - Premium and Bold */}
       <section className="from-background via-background to-secondary/20 relative w-full overflow-hidden bg-gradient-to-br">
         {/* Background decoration */}

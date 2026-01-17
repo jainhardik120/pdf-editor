@@ -1,5 +1,3 @@
-import { notFound } from 'next/navigation';
-
 import { HydrateClient, fetchQuery, prefetch } from '@/server/server';
 
 import { PdfEditorClient } from './pdf-editor-client';
@@ -17,10 +15,6 @@ const PdfEditorIdPage = async ({ params }: PageProps) => {
   prefetch((trpc) => trpc.pdfs.getDownloadUrl.queryOptions({ id }));
 
   const pdfData = await fetchQuery((trpc) => trpc.pdfs.getById.queryOptions({ id }));
-
-  if (pdfData === null) {
-    notFound();
-  }
 
   return (
     <HydrateClient>

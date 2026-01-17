@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 
 import { createSearchParamsCache, parseAsInteger } from 'nuqs/server';
 
+import { SetHeader } from '@/hooks/use-header-store';
 import { HydrateClient, prefetch } from '@/server/server';
 
 import { PdfListTable } from './pdf-list-table';
@@ -27,6 +28,7 @@ const PdfEditorPage = async ({ searchParams }: PageProps) => {
 
   return (
     <HydrateClient>
+      <SetHeader backNavigation="" primarySubText="" primaryText="PDF Editor" secondaryText="" />
       <div className="container mx-auto py-8">
         <Suspense fallback={<div>Loading...</div>}>
           <PdfListTable initialLimit={limit} initialPage={page} />

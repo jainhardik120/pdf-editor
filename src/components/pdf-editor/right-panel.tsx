@@ -826,7 +826,7 @@ export const RightPanel = () => {
   const element = getSelectedElement();
 
   return (
-    <div className="bg-card border-border flex h-full w-64 flex-col border-l">
+    <div className="bg-card border-border flex h-full w-96 flex-col border-l">
       <Tabs className="flex flex-1 flex-col" defaultValue="properties">
         <TabsList className="border-border mx-2 mt-2 grid w-auto grid-cols-3">
           <TabsTrigger className="text-xs" value="properties">
